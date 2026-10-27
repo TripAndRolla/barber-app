@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Prenotazione {{ booking.code }}{% endblock %}
+{% block content %}
+{% for category, message in get_flashed_messages(with_categories=true) if category == 'event' %}
+  {% if message == 'created' %}
+    <div class="alert alert--success" role="status"><strong>Prenotazione confermata!</strong> Conserva il codice qui sotto: ti servirà per modificare o annullare l'appuntamento.</div>
+  {% elif message == 'modified' %}
+    <div class="alert alert--success" role="status">Prenotazione modificata con successo.</div>
+  {% elif message == 'cancelled' %}
+    <div class="alert alert--success" role="status">Prenotazione annullata. Ti aspettiamo la prossima volta!</div>
+  {% endif %}
+{% endfor %}
+
+<section class="card ticket {% if not booking.active %}ticket--cancelled{% endif %}">
+  <div class="ticket__code">
+    <span class="muted">Codice prenotazione</span>
+    <strong>{{ booking.code }}</strong>
+  </div>
+  <dl class="ticket__details">
+    <div><dt>Servizio</dt><dd>{{ booking.service }}</dd></div>
+    <div><dt>Giorno</dt><dd>{{ booking.day_label|capitalize }}</dd></div>
+    <div><dt>Orario</dt><dd>{{ booking.start.strftime('%H:%M') }} – {{ booking.end.strftime('%H:%M') }}</dd></div>
+    <div><dt>Cliente</dt><dd>{{ booking.name }}</dd></div>
+    <div><dt>Stato</dt><dd><span class="badge badge--{{ booking.status }}">{{ booking.status }}</span></dd></div>
+    {% if booking.notes %}<div><dt>Note</dt><dd>{{ booking.notes }}</dd></div>{% endif %}
+  </dl>
+</section>
+
+{% if editable %}
+<section class="card card--form">
+  <h2 class="section-title">Modifica appuntamento</h2>
+  <form method="post" action="{{ url_for('modify', code=booking.code) }}" data-booking-form>
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    {% with sel_service=booking.service, sel_date=booking.day.isoformat(), sel_time=booking.start.strftime('%H:%M'), exclude_code=booking.code %}
+      {% include "_booking_fields.html" %}
+    {% endwith %}
+    <button class="btn btn--primary btn--block" type="submit">Salva modifiche</button>
+  </form>
+</section>
+
+<section class="card card--danger">
+  <h2 class="section-title">Annulla appuntamento</h2>
+  <p class="muted">Non puoi venire? Annulla la prenotazione così lo slot torna disponibile per altri clienti.</p>
+  <form method="post" action="{{ url_for('cancel', code=booking.code) }}"
+        data-confirm="Vuoi davvero annullare la prenotazione {{ booking.code }}?">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <button class="btn btn--danger btn--block" type="submit">Annulla prenotazione</button>
+  </form>
+</section>
+{% elif booking.active %}
+  <p class="muted center">Questo appuntamento è già iniziato o passato e non può più essere modificato.</p>
+{% else %}
+  <p class="center"><a class="btn btn--primary" href="{{ url_for('index') }}#prenota">Prenota un nuovo appuntamento</a></p>
+{% endif %}
+{% endblock %}

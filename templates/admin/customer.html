@@ -1,0 +1,73 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ c.name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.customers') }}">‹ Tutti i clienti</a></p>
+<div class="page-head">
+  <div>
+    <h1 class="section-title">{{ c.name }}</h1>
+    <p class="muted">
+      {% if c.phone %}<a href="tel:{{ c.phone|replace(' ', '') }}">{{ c.phone }}</a>{% endif %}
+      {% if c.phone and c.email %} · {% endif %}
+      {% if c.email %}<a href="mailto:{{ c.email }}">{{ c.email }}</a>{% endif %}
+      {% if not c.phone and not c.email %}Nessun recapito registrato{% endif %}
+    </p>
+  </div>
+  <a class="btn btn--primary btn--small" href="{{ url_for('admin.week', nome=c.name, telefono=c.phone, email=c.email) }}#nuovo">+ Nuovo appuntamento</a>
+</div>
+
+<div class="stats">
+  <div class="stat"><span class="stat__label">Visite</span><span class="stat__value">{{ c.visits }}</span></div>
+  <div class="stat"><span class="stat__label">Spesa {{ now.year }}</span><span class="stat__value">{{ c.spend_year|euro }}</span></div>
+  <div class="stat"><span class="stat__label">Spesa totale</span><span class="stat__value">{{ c.spend_total|euro }}</span></div>
+  <div class="stat"><span class="stat__label">Cancellazioni</span><span class="stat__value">{{ c.cancelled }}</span></div>
+</div>
+
+{% if by_year|length > 1 %}
+<section class="card">
+  <h2 class="card__title">Spesa per anno</h2>
+  <ul class="list">
+    {% for year, total in by_year %}<li><span>{{ year }}</span><strong>{{ total|euro }}</strong></li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<h2 class="card__title">Storico appuntamenti</h2>
+{# smartphone: una riga compatta per appuntamento #}
+<ul class="hist only-mobile">
+  {% for b in c.bookings %}
+    <li class="hist__row {% if not b.active %}row--muted{% endif %}">
+      <a class="hist__date" href="{{ url_for('admin.week', data=b.day.isoformat()) }}">
+        <strong>{{ b.day.strftime('%d/%m/%y') }}</strong><span>{{ b.start.strftime('%H:%M') }}</span></a>
+      <span class="hist__body">
+        <span>{{ b.service }}</span>
+        {% if b.notes %}<span class="muted small">{{ b.notes }}</span>{% endif %}
+      </span>
+      <span class="hist__side">
+        <strong>{{ b.amount(settings)|euro }}</strong>
+        {% if b.active and b.starts_at > now %}<span class="badge">in programma</span>
+        {% else %}<span class="badge badge--{{ b.status }}">{{ 'svolto' if b.active else b.status }}</span>{% endif %}
+      </span>
+    </li>
+  {% endfor %}
+</ul>
+<div class="table-wrap only-desktop">
+  <table class="table">
+    <thead><tr><th>Data</th><th>Orario</th><th>Servizio</th><th class="num">Importo</th><th>Stato</th><th>Note</th></tr></thead>
+    <tbody>
+    {% for b in c.bookings %}
+      <tr class="{% if not b.active %}row--muted{% endif %}">
+        <td data-label="Data"><a href="{{ url_for('admin.week', data=b.day.isoformat()) }}">{{ b.day.strftime('%d/%m/%Y') }}</a></td>
+        <td data-label="Orario">{{ b.start.strftime('%H:%M') }}–{{ b.end.strftime('%H:%M') }}</td>
+        <td data-label="Servizio">{{ b.service }}</td>
+        <td data-label="Importo" class="num">{{ b.amount(settings)|euro }}</td>
+        <td data-label="Stato">
+          {% if b.active and b.starts_at > now %}<span class="badge">in programma</span>
+          {% else %}<span class="badge badge--{{ b.status }}">{{ 'svolto' if b.active else b.status }}</span>{% endif %}
+        </td>
+        <td data-label="Note">{{ b.notes }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

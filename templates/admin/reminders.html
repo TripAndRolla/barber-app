@@ -1,0 +1,118 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Promemoria WhatsApp{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="section-title">Promemoria WhatsApp</h1>
+    <p class="muted small">
+      Appuntamenti di {{ format_day(day) }}{% if day == tomorrow %} (domani){% elif day == today %} (oggi){% endif %}.
+      Invio automatico ogni giorno alle 18:00 dal PC del negozio{% if not provider %}, attivo solo dopo aver configurato il fornitore WhatsApp{% endif %}.
+    </p>
+  </div>
+  <form method="get" class="weeknav">
+    <input class="input input--small" type="date" name="data" value="{{ day.isoformat() }}" aria-label="Giorno" onchange="this.form.submit()">
+  </form>
+</div>
+
+{% if provider %}
+  <div class="alert alert--success">Invio diretto attivo tramite <strong>{{ 'WhatsApp Cloud API (Meta)' if provider == 'meta' else 'Twilio' }}</strong>.</div>
+{% else %}
+  <div class="alert alert--warn">
+    <strong>Invio manuale:</strong> "Apri WhatsApp" apre la chat del cliente con il messaggio già scritto, basta premere Invia.
+    Per l'invio automatico configura <code>promemoria.env</code> (vedi README).
+  </div>
+{% endif %}
+
+{% if rows %}
+  {% if pending %}
+    <div class="bulk card">
+      <div>
+        <strong>{{ pending }} promemoria da inviare</strong>
+        <p class="muted small">Invio massivo manuale: WhatsApp si apre un cliente alla volta con il messaggio già scritto;
+          premi Invia, torna qui e trovi già il cliente successivo.</p>
+      </div>
+      <div class="bulk__actions">
+        <a class="btn btn--primary" href="{{ url_for('admin.guided_reminders', data=day.isoformat()) }}">Invio guidato a tutti ({{ pending }})</a>
+        {% if provider %}
+          <form method="post" action="{{ url_for('admin.send_reminders') }}"
+                data-confirm="Inviare automaticamente {{ pending }} promemoria tramite {{ provider }}?">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <input type="hidden" name="data" value="{{ day.isoformat() }}">
+            <input type="hidden" name="tutti" value="1">
+            <button class="btn btn--ghost" type="submit">Invia tutti automaticamente</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  {% elif rows|selectattr('link')|list %}
+    <div class="alert alert--success">Tutti i promemoria di questo giorno sono stati inviati.</div>
+  {% endif %}
+  <ul class="reminders">
+    {% for r in rows %}
+      {% set b = r.b %}
+      <li class="reminder {% if r.sent %}is-sent{% endif %}">
+        <div class="reminder__head">
+          <span class="reminder__time">{{ b.start.strftime('%H:%M') }}</span>
+          <span class="reminder__who"><strong>{{ b.name }}</strong><span class="muted small">{{ b.service }}{% if b.phone %} · {{ b.phone }}{% endif %}</span></span>
+          {% if r.sent %}
+            <span class="badge badge--confermata">Inviato {{ r.sent.at[11:16] }}{% if r.sent.via %} · {{ r.sent.via }}{% endif %}</span>
+          {% elif not r.link %}
+            <span class="badge badge--cancellata">Senza telefono</span>
+          {% else %}
+            <span class="badge badge--modificata">Da inviare</span>
+          {% endif %}
+        </div>
+        {% if r.link %}
+        <div class="reminder__actions">
+          <a class="btn btn--small btn--primary" href="{{ r.link }}" target="_blank" rel="noopener">Apri WhatsApp</a>
+          {% if provider and not r.sent %}
+            <form method="post" action="{{ url_for('admin.send_reminders') }}">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <input type="hidden" name="data" value="{{ day.isoformat() }}">
+              <input type="hidden" name="code" value="{{ r.key }}">
+              <button class="btn btn--small btn--ghost" type="submit">Invia ora</button>
+            </form>
+          {% endif %}
+          <form method="post" action="{{ url_for('admin.mark_reminder') }}">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <input type="hidden" name="data" value="{{ day.isoformat() }}">
+            <input type="hidden" name="code" value="{{ r.key }}">
+            {% if r.sent %}
+              <button class="btn btn--small btn--ghost" type="submit" name="annulla" value="1">Segna da inviare</button>
+            {% else %}
+              <button class="btn btn--small btn--ghost" type="submit">Segna come inviato</button>
+            {% endif %}
+          </form>
+        </div>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="card center"><p class="muted">Nessun appuntamento in questo giorno.</p></div>
+{% endif %}
+
+<section class="card" id="testo">
+  <h2 class="card__title">Testo del messaggio</h2>
+  <div class="reminder-editor">
+    <form method="post" action="{{ url_for('admin.reminder_template') }}">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="data" value="{{ day.isoformat() }}">
+      <label class="field">
+        <span>Messaggio</span>
+        <textarea class="input reminder-editor__text" name="template" rows="11" maxlength="1000">{{ template }}</textarea>
+      </label>
+      <p class="hint">Segnaposto: {% for k, v in placeholders.items() %}<code>{{ '{' ~ k ~ '}' }}</code> ({{ v }}){% if not loop.last %}, {% endif %}{% endfor %}.</p>
+      <div class="row-actions">
+        <button class="btn btn--small btn--ghost" type="submit" name="ripristina" value="1"
+               >Ripristina predefinito</button>
+        <button class="btn btn--primary" type="submit">Salva testo</button>
+      </div>
+    </form>
+    <div>
+      <span class="field-label">Anteprima</span>
+      <div class="wa-bubble">{{ preview }}</div>
+    </div>
+  </div>
+</section>
+{% endblock %}

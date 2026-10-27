@@ -1,0 +1,70 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Anagrafica clienti{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="section-title">Anagrafica clienti</h1>
+    <p class="muted small">Ricavata dalle prenotazioni: i clienti sono riconosciuti dal telefono o dall'e-mail. La spesa conta solo gli appuntamenti già svolti.</p>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><span class="stat__label">Clienti</span><span class="stat__value">{{ customers|length }}</span></div>
+  <div class="stat"><span class="stat__label">Incasso {{ year }}</span><span class="stat__value">{{ revenue_year|euro }}</span></div>
+  <div class="stat"><span class="stat__label">Incasso storico</span><span class="stat__value">{{ revenue_total|euro }}</span></div>
+</div>
+
+<form method="get" class="toolbar">
+  <input class="input" type="search" name="q" value="{{ q }}" placeholder="Cerca per nome, telefono o e-mail…" aria-label="Cerca cliente">
+  <select class="input" name="ordina" onchange="this.form.submit()" aria-label="Ordina per">
+    <option value="nome" {% if order == 'nome' %}selected{% endif %}>Ordina: nome</option>
+    <option value="recenti" {% if order == 'recenti' %}selected{% endif %}>Ordina: più recenti</option>
+    <option value="anno" {% if order == 'anno' %}selected{% endif %}>Ordina: spesa {{ year }}</option>
+    <option value="spesa" {% if order == 'spesa' %}selected{% endif %}>Ordina: spesa storica</option>
+  </select>
+  <button class="btn btn--ghost" type="submit">Cerca</button>
+</form>
+
+{% if customers %}
+{# smartphone: schede compatte #}
+<ul class="mcards only-mobile">
+  {% for c in customers %}
+    <li class="mcard">
+      <a class="mcard__main" href="{{ url_for('admin.customer_detail', cid=c.id) }}">
+        <span class="mcard__title">{{ c.name }}</span>
+        <span class="mcard__meta">{{ c.visits }} visit{{ 'a' if c.visits == 1 else 'e' }}{% if c.last_visit %} · ultima {{ c.last_visit.day.strftime('%d/%m/%y') }}{% endif %}{% if c.next_booking %} · <strong>prossima {{ c.next_booking.day.strftime('%d/%m') }} {{ c.next_booking.start.strftime('%H:%M') }}</strong>{% endif %}</span>
+        <span class="mcard__money"><span>{{ year }}: <strong>{{ c.spend_year|euro }}</strong></span><span>Totale: <strong>{{ c.spend_total|euro }}</strong></span></span>
+      </a>
+      {% if c.phone or c.email %}
+      <span class="mcard__actions">
+        {% if c.phone %}<a class="btn btn--small btn--ghost" href="tel:{{ c.phone|replace(' ', '') }}">Chiama</a>
+        <a class="btn btn--small btn--ghost" href="https://wa.me/{{ c.phone|replace('+', '')|replace(' ', '') }}">WhatsApp</a>{% endif %}
+        {% if c.email %}<a class="btn btn--small btn--ghost" href="mailto:{{ c.email }}">E-mail</a>{% endif %}
+      </span>
+      {% endif %}
+    </li>
+  {% endfor %}
+</ul>
+<div class="table-wrap only-desktop">
+  <table class="table">
+    <thead><tr><th>Cliente</th><th>Telefono</th><th>E-mail</th><th>Visite</th><th>Ultima visita</th><th>Prossimo</th><th class="num">Spesa {{ year }}</th><th class="num">Spesa totale</th></tr></thead>
+    <tbody>
+    {% for c in customers %}
+      <tr>
+        <td data-label="Cliente"><a href="{{ url_for('admin.customer_detail', cid=c.id) }}"><strong>{{ c.name }}</strong></a></td>
+        <td data-label="Telefono">{% if c.phone %}<a href="tel:{{ c.phone|replace(' ', '') }}">{{ c.phone }}</a>{% else %}—{% endif %}</td>
+        <td data-label="E-mail">{% if c.email %}<a href="mailto:{{ c.email }}">{{ c.email }}</a>{% else %}—{% endif %}</td>
+        <td data-label="Visite">{{ c.visits }}{% if c.cancelled %} <span class="muted small">(+{{ c.cancelled }} canc.)</span>{% endif %}</td>
+        <td data-label="Ultima visita">{{ c.last_visit.day.strftime('%d/%m/%Y') if c.last_visit else '—' }}</td>
+        <td data-label="Prossimo">{% if c.next_booking %}<a href="{{ url_for('admin.week', data=c.next_booking.day.isoformat()) }}">{{ c.next_booking.day.strftime('%d/%m') }} {{ c.next_booking.start.strftime('%H:%M') }}</a>{% else %}—{% endif %}</td>
+        <td data-label="Spesa {{ year }}" class="num">{{ c.spend_year|euro }}</td>
+        <td data-label="Spesa totale" class="num"><strong>{{ c.spend_total|euro }}</strong></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="card center"><p class="muted">{% if q %}Nessun cliente corrisponde alla ricerca.{% else %}Ancora nessun cliente: l'anagrafica si riempie con le prenotazioni.{% endif %}</p></div>
+{% endif %}
+{% endblock %}

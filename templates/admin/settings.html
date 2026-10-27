@@ -1,0 +1,157 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Orari e chiusure{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="section-title">Impostazioni e orari</h1>
+    <p class="muted small">Le modifiche valgono subito per le prenotazioni online. Gli appuntamenti già presi non vengono toccati.</p>
+  </div>
+</div>
+{% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+
+<form method="post" action="{{ url_for('admin.settings_page') }}" data-settings-form>
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+  <section class="card">
+    <h2 class="card__title">Orari di apertura</h2>
+    <p class="hint">Fino a due fasce per giorno. Nessun servizio viene prenotato a cavallo tra le fasce (es. pausa pranzo).</p>
+    <div class="hours">
+      {% for d in range(7) %}
+        {% set h = view.hours[d] %}
+        <div class="hours__row" data-day-row>
+          <label class="hours__day">
+            <input type="checkbox" name="day-{{ d }}-open" value="1" {% if h.open %}checked{% endif %} data-day-toggle>
+            <span>{{ giorni[d]|capitalize }}</span>
+          </label>
+          <div class="hours__windows">
+            {% for w in range(h.windows|length) %}
+              <span class="hours__window">
+                <span class="muted small">{{ 'Mattina' if w == 0 else 'Pomeriggio' }}</span>
+                <input class="input input--time" type="time" step="300" name="day-{{ d }}-w{{ w }}-start" value="{{ h.windows[w][0] }}" aria-label="{{ giorni[d] }} apertura">
+                <span>–</span>
+                <input class="input input--time" type="time" step="300" name="day-{{ d }}-w{{ w }}-end" value="{{ h.windows[w][1] }}" aria-label="{{ giorni[d] }} chiusura">
+              </span>
+            {% endfor %}
+            <span class="hours__closed muted">Chiuso</span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="card__title">Regole di prenotazione</h2>
+    <div class="grid-2">
+      <label class="field">
+        <span>Intervallo tra gli orari proposti</span>
+        <select class="input" name="slot_step">
+          {% for step in [5, 10, 15, 20, 30, 60] %}
+            <option value="{{ step }}" {% if view.slot_step|string == step|string %}selected{% endif %}>ogni {{ step }} minuti</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="field">
+        <span>Prenotabile fino a (giorni in anticipo)</span>
+        <input class="input" type="number" name="horizon_days" min="1" max="365" value="{{ view.horizon_days }}">
+      </label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="card__title">Dati del negozio</h2>
+    <div class="grid-2">
+      <label class="field"><span>Nome</span><input class="input" name="shop_name" value="{{ view.shop_name }}" required></label>
+      <label class="field"><span>Telefono</span><input class="input" name="phone" value="{{ view.phone }}"></label>
+    </div>
+    <label class="field"><span>Indirizzo</span><input class="input" name="address" value="{{ view.address }}"></label>
+  </section>
+
+  <div class="sticky-save">
+    <button class="btn btn--primary" type="submit">Salva orari e impostazioni</button>
+  </div>
+</form>
+
+<section class="card" id="chiusure">
+  <h2 class="card__title">Chiusure straordinarie e ferie</h2>
+  <p class="hint">Nei giorni indicati i clienti non possono prenotare. Per un solo giorno lascia vuota la data di fine.</p>
+  <form method="post" action="{{ url_for('admin.add_closure') }}" class="grid-4">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="field"><span>Dal</span><input class="input" type="date" name="start" min="{{ today.isoformat() }}" required></label>
+    <label class="field"><span>Al <small class="muted">(incluso)</small></span><input class="input" type="date" name="end" min="{{ today.isoformat() }}"></label>
+    <label class="field"><span>Motivo <small class="muted">(visibile ai clienti)</small></span><input class="input" name="reason" maxlength="60" placeholder="es. Ferie estive"></label>
+    <div class="field field--end"><button class="btn btn--primary" type="submit">Aggiungi chiusura</button></div>
+  </form>
+  {% if closures %}
+    <ul class="list closures">
+      {% for i, c, past in closures %}
+        <li class="{% if past %}row--muted{% endif %}">
+          <span><strong>{{ c.label|capitalize }}</strong>{% if c.reason %} · {{ c.reason }}{% endif %}{% if past %} <span class="muted small">(passata)</span>{% endif %}</span>
+          <form method="post" action="{{ url_for('admin.delete_closure', index=i) }}" data-confirm="Rimuovere la chiusura {{ c.label }}?">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <button class="btn btn--small btn--danger-ghost" type="submit">Rimuovi</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted small">Nessuna chiusura programmata.</p>
+  {% endif %}
+</section>
+
+<section class="card" id="festivita">
+  <h2 class="card__title">Festività nazionali</h2>
+  <p class="hint">Calcolate automaticamente ogni anno (Pasqua e Pasquetta comprese). Le festività spuntate sono giorni di chiusura e i clienti non possono prenotare. Togli la spunta se in quel giorno vuoi lavorare.</p>
+  <form method="post" action="{{ url_for('admin.national_holidays') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div class="holidays">
+      {% for h in national %}
+        <label class="holiday">
+          <input type="checkbox" name="closed" value="{{ h.key }}" {% if h.closed %}checked{% endif %}>
+          <span class="holiday__name">{{ h.name }}</span>
+          <span class="holiday__date muted small">{% if h.next %}{{ format_day(h.next) }}{% endif %}</span>
+        </label>
+      {% endfor %}
+    </div>
+    <button class="btn btn--primary" type="submit">Salva festività nazionali</button>
+  </form>
+
+  <h2 class="card__title holidays__local-title">Festività locali</h2>
+  <p class="hint">Si ripetono ogni anno nella stessa data, ad esempio il santo patrono del paese o una festa cittadina.</p>
+  <form method="post" action="{{ url_for('admin.add_local_holiday') }}" class="grid-4">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="field"><span>Data <small class="muted">(conta solo giorno e mese)</small></span><input class="input" type="date" name="date" required></label>
+    <label class="field grid-span-2"><span>Nome</span><input class="input" name="name" maxlength="40" required placeholder="es. Festa del santo patrono"></label>
+    <div class="field field--end"><button class="btn btn--primary" type="submit">Aggiungi festività</button></div>
+  </form>
+  {% if local_holidays %}
+    <ul class="list closures">
+      {% for i, h in local_holidays %}
+        <li>
+          <span><strong>{{ h.label }}</strong> · {{ h.name }} <span class="muted small">(ogni anno)</span></span>
+          <form method="post" action="{{ url_for('admin.delete_local_holiday', index=i) }}" data-confirm="Rimuovere la festività «{{ h.name }}»?">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <button class="btn btn--small btn--danger-ghost" type="submit">Rimuovi</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted small">Nessuna festività locale impostata.</p>
+  {% endif %}
+</section>
+
+<section class="card card--narrow" id="account">
+  <h2 class="card__title">Password del Pannello Admin</h2>
+  {% if using_env_pw %}
+    <p class="muted">La password è impostata tramite la variabile d'ambiente <code>BARBER_ADMIN_PASSWORD</code>.</p>
+  {% else %}
+  <form method="post" action="{{ url_for('admin.change_password') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="field"><span>Password attuale</span><input class="input" type="password" name="current" required autocomplete="current-password"></label>
+    <label class="field"><span>Nuova password <small class="muted">(min. 8 caratteri)</small></span><input class="input" type="password" name="new" required minlength="8" autocomplete="new-password"></label>
+    <label class="field"><span>Ripeti nuova password</span><input class="input" type="password" name="new2" required minlength="8" autocomplete="new-password"></label>
+    <button class="btn btn--ghost" type="submit">Cambia password</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

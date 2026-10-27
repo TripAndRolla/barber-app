@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Configura Pannello Admin{% endblock %}
+{% block content %}
+<section class="card card--narrow">
+  <h1 class="section-title">Benvenuto!</h1>
+  <p class="muted">Scegli la password del Pannello Admin: servirà per gestire agenda, clienti, listino, orari e festività. Solo chi la conosce potrà accedere.</p>
+  {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+  <form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="field">
+      <span>Password <small class="muted">(min. 8 caratteri)</small></span>
+      <input class="input" type="password" name="password" required minlength="8" autocomplete="new-password" autofocus>
+    </label>
+    <label class="field">
+      <span>Ripeti password</span>
+      <input class="input" type="password" name="password2" required minlength="8" autocomplete="new-password">
+    </label>
+    <button class="btn btn--primary btn--block" type="submit">Salva e continua</button>
+  </form>
+</section>
+{% endblock %}

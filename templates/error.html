@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Errore{% endblock %}
+{% block content %}
+<section class="card card--narrow center">
+  <h1 class="section-title">{% if error.code == 404 %}Pagina non trovata{% elif error.code == 403 %}Accesso non consentito{% else %}Qualcosa è andato storto{% endif %}</h1>
+  <p class="muted">{{ error.description }}</p>
+  <a class="btn btn--primary" href="{{ url_for('index') }}">Torna alla home</a>
+</section>
+{% endblock %}

@@ -1,0 +1,32 @@
+{# Campi servizio + data + orario, condivisi da nuova prenotazione e modifica.
+   Variabili: sel_service, sel_date, sel_time, exclude_code #}
+<fieldset class="step">
+  <legend><span class="step__n">1</span> Scegli il servizio</legend>
+  <div class="choices">
+    {% for s in shop.active_services %}
+      <label class="choice">
+        <input type="radio" name="service" value="{{ s.name }}" required
+               {% if sel_service == s.name or (not sel_service and loop.first) %}checked{% endif %}>
+        <span class="choice__body">
+          <span class="choice__title">{{ s.name }}</span>
+          <span class="choice__meta">{{ s.duration }} min{% if s.price_label %} · {{ s.price_label }}{% endif %}</span>
+        </span>
+      </label>
+    {% endfor %}
+  </div>
+</fieldset>
+
+<fieldset class="step">
+  <legend><span class="step__n">2</span> Scegli il giorno</legend>
+  <input class="input input--date" type="date" name="date" required
+         min="{{ min_date }}" max="{{ max_date }}" value="{{ sel_date or '' }}">
+</fieldset>
+
+<fieldset class="step">
+  <legend><span class="step__n">3</span> Scegli l'orario</legend>
+  <div class="slots" data-slots data-selected="{{ sel_time or '' }}" data-exclude="{{ exclude_code or '' }}"
+       aria-live="polite">
+    <p class="muted">Seleziona prima un giorno per vedere gli orari liberi.</p>
+  </div>
+  <noscript><p class="muted">Per vedere gli orari disponibili attiva JavaScript.</p></noscript>
+</fieldset>

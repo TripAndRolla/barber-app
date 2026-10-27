@@ -1,0 +1,27 @@
+# Blueprint Render: New + > Blueprint > seleziona questo repository.
+# I valori con "sync: false" vengono chiesti da Render alla creazione (non finiscono nel repository).
+services:
+  - type: web
+    name: barber-stefano-stella
+    runtime: python
+    plan: free
+    region: frankfurt
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.10"
+      - key: TZ
+        value: Europe/Rome            # orari e "domani" calcolati sull'ora italiana
+      - key: BARBER_SECRET_KEY
+        generateValue: true           # chiave casuale per le sessioni
+      - key: BARBER_ADMIN_PASSWORD
+        sync: false                   # password del Pannello Admin
+      - key: GITHUB_TOKEN
+        sync: false                   # token con permesso "Contents: read and write" sul repo dati
+      - key: GITHUB_REPO
+        sync: false                   # es. tuo-utente/barber-dati (repository PRIVATO)
+      - key: GITHUB_BRANCH
+        value: main

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Pannello Admin{% endblock %}
+{% block content %}
+<section class="card card--narrow">
+  <h1 class="section-title">Pannello Admin</h1>
+  <p class="muted">Area riservata al titolare.</p>
+  {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+  <form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="field">
+      <span>Password</span>
+      <input class="input" type="password" name="password" required autocomplete="current-password" autofocus>
+    </label>
+    <button class="btn btn--primary btn--block" type="submit">Accedi</button>
+  </form>
+</section>
+{% endblock %}

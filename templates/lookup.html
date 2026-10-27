@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}La mia prenotazione{% endblock %}
+{% block content %}
+<section class="card card--narrow">
+  <h1 class="section-title">Gestisci la tua prenotazione</h1>
+  <p class="muted">Inserisci il codice ricevuto al momento della prenotazione per modificarla o annullarla.</p>
+  {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ url_for('lookup') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label class="field">
+      <span>Codice prenotazione</span>
+      <input class="input input--code" name="code" required maxlength="12" autocomplete="off"
+             autocapitalize="characters" placeholder="es. K7M2QX" value="{{ code or '' }}">
+    </label>
+    <button class="btn btn--primary btn--block" type="submit">Cerca</button>
+  </form>
+</section>
+{% endblock %}

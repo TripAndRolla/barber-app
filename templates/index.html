@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Prenota il tuo appuntamento{% endblock %}
+{% block content %}
+<section class="hero {% if hero_image %}hero--photo{% endif %}"
+         {% if hero_image %}style="--hero-img: url('{{ hero_image }}')"{% endif %}>
+  <p class="eyebrow">{{ shop.shop_name }}</p>
+  <h1>Il tuo prossimo taglio è a un tocco di distanza.</h1>
+  <p class="lead">Scegli servizio, giorno e orario: ricevi subito un codice per modificare o annullare l'appuntamento in autonomia.</p>
+  <div class="hero__actions">
+    <a class="btn btn--primary" href="#prenota">Prenota un appuntamento <span aria-hidden="true">→</span></a>
+    <a class="btn btn--ghost" href="{{ url_for('lookup') }}">Ho già un codice</a>
+  </div>
+</section>
+
+<section class="info-grid">
+  <article class="card">
+    <h2 class="card__title">Servizi</h2>
+    <ul class="list">
+      {% for s in shop.active_services %}
+        <li><span>{{ s.name }}</span><span class="muted">{{ s.duration }} min{% if s.price_label %} · <strong>{{ s.price_label }}</strong>{% endif %}</span></li>
+      {% endfor %}
+    </ul>
+  </article>
+  <article class="card">
+    <h2 class="card__title">Orari</h2>
+    <ul class="list">
+      {% for day, label in shop.hours_summary() %}
+        <li><span>{{ day }}</span><span class="{% if label == 'Chiuso' %}muted{% endif %}">{{ label }}</span></li>
+      {% endfor %}
+    </ul>
+    <p class="hint">Gli appuntamenti iniziano e finiscono sempre all'interno della stessa fascia oraria.</p>
+    {% set closures = shop.upcoming_closures(today) %}
+    {% set holidays = shop.upcoming_holidays(today, 45) %}
+    {% if closures or holidays %}
+      <div class="alert alert--warn small">
+        <strong>Prossime chiusure:</strong>
+        {% for c in closures[:4] %}{{ c.label }}{% if c.reason %} ({{ c.reason }}){% endif %}{% if not loop.last or holidays %}; {% endif %}{% endfor %}
+        {% for d, name in holidays[:4] %}{{ d.strftime('%d/%m') }} ({{ name }}){% if not loop.last %}; {% endif %}{% endfor %}
+      </div>
+    {% endif %}
+  </article>
+</section>
+
+<section id="prenota" class="card card--form">
+  <h2 class="section-title">Prenota un appuntamento</h2>
+  {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ url_for('book') }}" data-booking-form novalidate>
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    {% with sel_service=form.get('service'), sel_date=form.get('date'), sel_time=form.get('time'), exclude_code='' %}
+      {% include "_booking_fields.html" %}
+    {% endwith %}
+
+    <fieldset class="step">
+      <legend><span class="step__n">4</span> I tuoi dati</legend>
+      <label class="field">
+        <span>Nome e cognome</span>
+        <input class="input" name="name" required maxlength="60" autocomplete="name" value="{{ form.get('name', '') }}">
+      </label>
+      <div class="grid-2">
+        <label class="field">
+          <span>Telefono</span>
+          <span class="phone-input">
+            <span class="phone-input__prefix" aria-hidden="true">+39</span>
+            <input class="input" type="tel" name="phone" required maxlength="20" inputmode="tel"
+                   autocomplete="tel-national" placeholder="333 1234567" aria-label="Telefono (prefisso +39)"
+                   value="{{ form.get('phone', '') }}">
+          </span>
+        </label>
+        <label class="field">
+          <span>E-mail <small class="muted">(facoltativa)</small></span>
+          <input class="input" type="email" name="email" maxlength="80" autocomplete="email"
+                 placeholder="nome@esempio.it" value="{{ form.get('email', '') }}">
+        </label>
+      </div>
+      <label class="field">
+        <span>Note <small class="muted">(facoltative)</small></span>
+        <textarea class="input" name="notes" rows="2" maxlength="200">{{ form.get('notes', '') }}</textarea>
+      </label>
+    </fieldset>
+
+    <button class="btn btn--primary btn--block" type="submit">Conferma prenotazione</button>
+  </form>
+</section>
+{% endblock %}

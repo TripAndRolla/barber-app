@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block body_class %}is-admin{% endblock %}
+{% block main_class %}wrap--wide{% endblock %}
+{% block subnav %}
+{% if storage_warning %}
+  <div class="alert alert--error" role="alert">
+    <strong>Attenzione: i dati non vengono salvati in modo permanente.</strong>
+    Su Render imposta le variabili <code>GITHUB_TOKEN</code> e <code>GITHUB_REPO</code> (vedi README),
+    altrimenti prenotazioni e impostazioni si perdono al primo riavvio del servizio.
+  </div>
+{% endif %}
+<nav class="adminnav" aria-label="Pannello Admin">
+  {% set ep = request.endpoint %}
+  <a class="adminnav__item {% if ep == 'admin.week' %}is-on{% endif %}" href="{{ url_for('admin.week') }}">
+    <span class="adminnav__n">1</span> Pianificazione</a>
+  <a class="adminnav__item {% if ep in ('admin.customers', 'admin.customer_detail') %}is-on{% endif %}" href="{{ url_for('admin.customers') }}">
+    <span class="adminnav__n">2</span> Clienti</a>
+  <a class="adminnav__item {% if ep == 'admin.price_list' %}is-on{% endif %}" href="{{ url_for('admin.price_list') }}">
+    <span class="adminnav__n">3</span> Listino</a>
+  <a class="adminnav__item {% if ep == 'admin.settings_page' %}is-on{% endif %}" href="{{ url_for('admin.settings_page') }}">
+    <span class="adminnav__n">4</span> Orari e chiusure</a>
+  <a class="adminnav__item {% if ep == 'admin.reminders_page' %}is-on{% endif %}" href="{{ url_for('admin.reminders_page') }}">
+    <span class="adminnav__n">5</span> Promemoria</a>
+</nav>
+{% endblock %}

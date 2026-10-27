@@ -1,0 +1,6 @@
+# Fine riga Linux nel repository (Render gira su Linux); i .bat restano in formato Windows.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.jpg binary
+*.webp binary

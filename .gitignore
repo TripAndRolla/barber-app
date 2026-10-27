@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.secret_key
+settings.json
+
+promemoria.env
+promemoria.log
+promemoria_inviati.json
+*.tmp
+.agenda-*
+.settings-*

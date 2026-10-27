@@ -1,0 +1,66 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Invio guidato promemoria{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.reminders_page', data=day.isoformat()) }}">‹ Torna ai promemoria</a></p>
+<div class="page-head">
+  <div>
+    <h1 class="section-title">Invio guidato</h1>
+    <p class="muted small">Promemoria di {{ format_day(day) }} · {{ done }} di {{ total }} inviati</p>
+  </div>
+</div>
+
+<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="{{ total }}" aria-valuenow="{{ done }}">
+  <span style="width: {{ (100 * done / total) if total else 100 }}%"></span>
+</div>
+
+{% if current %}
+  {% set b = current.b %}
+  <section class="card guided" data-guided>
+    <p class="muted small guided__step">Prossimo: {{ done + skipped|length + 1 }} di {{ total }}{% if queue|length > 1 %} · poi altri {{ queue|length - 1 }}{% endif %}</p>
+    <div class="guided__who">
+      <span class="guided__time">{{ b.start.strftime('%H:%M') }}</span>
+      <span><strong>{{ b.name }}</strong><span class="muted">{{ b.service }} · {{ b.phone }}</span></span>
+    </div>
+    <div class="wa-bubble">{{ current.text }}</div>
+
+    <a class="btn btn--primary btn--block guided__open" href="{{ current.link }}" target="_blank" rel="noopener"
+       data-guided-open data-key="{{ current.key }}">Apri WhatsApp e invia</a>
+    <p class="hint center">Dopo aver premuto Invia in WhatsApp torna su questa pagina: troverai il cliente successivo.</p>
+
+    <div class="guided__secondary">
+      {# senza JavaScript: si segna a mano e si passa al successivo #}
+      <form method="post" action="{{ url_for('admin.mark_reminder') }}" data-guided-mark>
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="data" value="{{ day.isoformat() }}">
+        <input type="hidden" name="code" value="{{ current.key }}">
+        <input type="hidden" name="next" value="{{ url_for('admin.guided_reminders', data=day.isoformat(), salta=skipped_keys) }}">
+        <button class="btn btn--small btn--ghost" type="submit">Già inviato, avanti →</button>
+      </form>
+      <a class="btn btn--small btn--ghost" href="{{ url_for('admin.guided_reminders', data=day.isoformat(), salta=skip_next) }}">Salta questo cliente</a>
+    </div>
+  </section>
+
+  {% if queue|length > 1 %}
+    <section class="card">
+      <h2 class="card__title">In coda</h2>
+      <ul class="list">
+        {% for r in queue[1:] %}<li><span>{{ r.b.start.strftime('%H:%M') }} · {{ r.b.name }}</span><span class="muted">{{ r.b.service }}</span></li>{% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+{% else %}
+  <section class="card center guided-done">
+    <div class="guided-done__icon" aria-hidden="true">✓</div>
+    <h2 class="card__title">{% if total %}Fatto!{% else %}Nessun promemoria da inviare{% endif %}</h2>
+    <p class="muted">
+      {% if total %}{{ done }} di {{ total }} promemoria inviati per {{ format_day(day) }}.{% else %}Non ci sono appuntamenti con telefono in questo giorno.{% endif %}
+      {% if skipped %}<br>Saltati: {{ skipped|map(attribute='b.name')|join(', ') }}.{% endif %}
+      {% if without_phone %}<br>{{ without_phone }} appuntament{{ 'o' if without_phone == 1 else 'i' }} senza telefono.{% endif %}
+    </p>
+    {% if skipped %}
+      <a class="btn btn--ghost" href="{{ url_for('admin.guided_reminders', data=day.isoformat()) }}">Riprova con i saltati</a>
+    {% endif %}
+    <a class="btn btn--primary" href="{{ url_for('admin.reminders_page', data=day.isoformat()) }}">Torna ai promemoria</a>
+  </section>
+{% endif %}
+{% endblock %}

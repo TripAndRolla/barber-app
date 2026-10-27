@@ -1,0 +1,46 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Listino{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="section-title">Gestione listino</h1>
+    <p class="muted small">Prezzi e durate valgono per le nuove prenotazioni. Gli appuntamenti già presi mantengono il prezzo del momento in cui sono stati fissati.</p>
+  </div>
+</div>
+{% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+
+<form method="post" class="card" data-settings-form>
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="table-wrap">
+    <table class="table table--form" data-services>
+      <thead><tr><th>Servizio</th><th>Durata (min)</th><th>Prezzo (€)</th><th>Visibile ai clienti</th><th>Elimina</th></tr></thead>
+      <tbody>
+      {% for s in services %}
+        {% set i = loop.index0 %}
+        <tr>
+          <td class="td--name" data-label="Servizio"><input class="input" name="svc-{{ i }}-name" value="{{ s.name }}" maxlength="40" required></td>
+          <td data-label="Durata (min)"><input class="input" type="number" name="svc-{{ i }}-duration" value="{{ s.duration }}" min="5" max="480" step="5" required></td>
+          <td data-label="Prezzo (€)"><input class="input" name="svc-{{ i }}-price" value="{{ s.price }}" inputmode="decimal" placeholder="es. 15,00"></td>
+          <td class="td--check" data-label="Visibile ai clienti"><input type="checkbox" name="svc-{{ i }}-active" value="1" {% if s.active %}checked{% endif %}></td>
+          <td class="td--check td--delete" data-label="Elimina"><input type="checkbox" name="svc-{{ i }}-delete" value="1"></td>
+        </tr>
+      {% endfor %}
+      {% set i = services|length %}
+      <tr class="row--new">
+        <td class="td--name" data-label="Nuovo servizio"><input class="input" name="svc-{{ i }}-name" maxlength="40" placeholder="es. Taglio + Barba"></td>
+        <td data-label="Durata (min)"><input class="input" type="number" name="svc-{{ i }}-duration" min="5" max="480" step="5" placeholder="75"></td>
+        <td data-label="Prezzo (€)"><input class="input" name="svc-{{ i }}-price" inputmode="decimal" placeholder="es. 20,00"></td>
+        <td class="td--check" data-label="Visibile ai clienti"><input type="checkbox" name="svc-{{ i }}-active" value="1" checked></td>
+        <td></td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+  <input type="hidden" name="service_count" value="{{ services|length + 1 }}" data-service-count>
+  <p class="hint">Lascia vuoto il prezzo per non mostrarlo. Togli la spunta "Visibile" per nascondere un servizio ai clienti senza perderne lo storico.</p>
+  <div class="row-actions">
+    <button type="button" class="btn btn--small btn--ghost" data-add-service>+ Aggiungi riga</button>
+    <button class="btn btn--primary" type="submit">Salva listino</button>
+  </div>
+</form>
+{% endblock %}
