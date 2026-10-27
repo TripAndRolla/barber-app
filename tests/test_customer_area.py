@@ -45,9 +45,12 @@ def test_customer_login_and_own_bookings_only(env):
         other = book(c, token, "11:00", "347 0000000", name="Altro Cliente")
         assert c.get("/area-clienti").status_code == 302  # serve l'accesso
 
-        bad = c.post("/area-clienti/accedi", data={"_csrf": token, "phone": "347 0000000", "code": mine1})
-        assert "non corretti" in bad.get_data(as_text=True)  # codice di un altro numero
-        ok = c.post("/area-clienti/accedi", data={"_csrf": token, "phone": "+393331234567", "code": mine1.lower()})
+        bad = c.post("/area-clienti/accedi", data={"_csrf": token, "accesso": "340 9999999"})
+        assert "Nessuna prenotazione trovata" in bad.get_data(as_text=True)  # numero senza prenotazioni
+        bad = c.post("/area-clienti/accedi", data={"_csrf": token, "accesso": "ZZZZZZ"})
+        assert "Nessuna prenotazione trovata" in bad.get_data(as_text=True)  # codice inesistente
+        # accesso con il solo numero di telefono (scritto in un altro formato)
+        ok = c.post("/area-clienti/accedi", data={"_csrf": token, "accesso": "+39 333 123 4567"})
         assert ok.status_code == 302
         area = c.get("/area-clienti").get_data(as_text=True)
         assert mine1 in area and mine2 in area and other not in area
@@ -57,6 +60,11 @@ def test_customer_login_and_own_bookings_only(env):
         assert 'value="Mario Rossi"' in home and 'value="3331234567"' in home and "Le mie prenotazioni" in home
         c.post("/area-clienti/esci", data={"_csrf": token})
         assert c.get("/area-clienti").status_code == 302
+        # accesso con il solo codice prenotazione: stesse prenotazioni dello stesso numero
+        ok = c.post("/area-clienti/accedi", data={"_csrf": token, "accesso": mine2.lower()})
+        assert ok.status_code == 302
+        area = c.get("/area-clienti").get_data(as_text=True)
+        assert mine1 in area and mine2 in area and other not in area
 
 
 def test_customer_login_rate_limited(env):
@@ -64,8 +72,8 @@ def test_customer_login_rate_limited(env):
         token = csrf(c)
         code = book(c, token)
         for _ in range(5):
-            c.post("/area-clienti/accedi", data={"_csrf": token, "phone": "3331234567", "code": "XXXXXX"})
-        r = c.post("/area-clienti/accedi", data={"_csrf": token, "phone": "3331234567", "code": code})
+            c.post("/area-clienti/accedi", data={"_csrf": token, "accesso": "XXXXXX"})
+        r = c.post("/area-clienti/accedi", data={"_csrf": token, "accesso": code})
         assert "Troppi tentativi" in r.get_data(as_text=True)
 
 
@@ -91,7 +99,7 @@ def test_owner_alerted_on_customer_changes(env, isolated_notifications):
         assert headers["Click"].endswith("/admin/avvisi")
 
         # annullamento dall'area clienti
-        c.post("/area-clienti/accedi", data={"_csrf": token, "phone": "3331234567", "code": code})
+        c.post("/area-clienti/accedi", data={"_csrf": token, "accesso": "3331234567"})
         r = c.post(f"/gestisci/{code}/cancella", data={"_csrf": token, "next": "/area-clienti"})
         assert r.headers["Location"].endswith("/area-clienti")
         ev = isolated_notifications.all()[0]

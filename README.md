@@ -23,7 +23,7 @@ Gli orari proposti non si sovrappongono ad altri appuntamenti, non sono nel pass
 
 ## Area clienti (`/area-clienti`)
 
-Il cliente accede con **telefono + codice di una sua prenotazione** (nessuna password da ricordare) e vede tutte le prenotazioni fatte con quel numero: prossimi appuntamenti con "Modifica", "Annulla" e codice copiabile, storico, e "Nuova prenotazione" con nome e telefono già compilati. Può restare collegato 30 giorni. Dopo 5 tentativi errati l'accesso è bloccato per 5 minuti.
+Il cliente accede con il **numero di telefono oppure con il codice di una sua prenotazione** (nessuna password da ricordare) e vede tutte le prenotazioni fatte con quel numero: prossimi appuntamenti con "Modifica", "Annulla" e codice copiabile, storico, e "Nuova prenotazione" con nome e telefono già compilati. Può restare collegato 30 giorni. Dopo 5 tentativi errati l'accesso è bloccato per 5 minuti.
 
 ## Avvisi al titolare
 

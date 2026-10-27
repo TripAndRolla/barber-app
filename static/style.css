@@ -617,6 +617,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
   background: var(--accent); color: var(--accent-ink); font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
 }
 .eyebrow--dark { color: var(--muted); opacity: 1; }
+.input--login { font-size: 1.15rem; font-weight: 600; text-align: center; letter-spacing: .04em; }
 
 .my-bookings { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 10px; }
 .my-booking { display: grid; grid-template-columns: 64px 1fr; gap: 14px; background: var(--surface); border-radius: 22px; box-shadow: var(--shadow); padding: 14px; }
