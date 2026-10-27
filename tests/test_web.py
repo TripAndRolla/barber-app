@@ -167,6 +167,7 @@ def test_confirmation_popup_only_right_after_booking(client):
     assert "Prenotazione confermata!" in page and code in page and "alle <strong>17:30</strong>" in page
     assert "<em>Hai bisogno di un sistema automatizzato per la tua azienda?" in page
     assert 'href="https://wa.me/393348505104"' in page
+    assert 'P.IVA 05377850754' in page
     assert page.count(f'data-copy="{code}"') == 2  # pulsante "Copia" nel popup e nella scheda
     # riaprendo la pagina con il codice il popup non ricompare, il pulsante "Copia" resta
     again = client.get(f"/gestisci/{code}").get_data(as_text=True)
