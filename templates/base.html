@@ -48,6 +48,7 @@
         <strong>{{ shop.shop_name }}</strong><br>
         {% if shop.address %}{{ shop.address }}<br>{% endif %}
         {% if shop.phone %}Tel. <a href="tel:{{ shop.phone|replace(' ', '') }}">{{ shop.phone }}</a>{% endif %}
+        {% if shop.vat_number %}<br>P.IVA {{ shop.vat_number }}{% endif %}
       </div>
       <div class="footer__links">
         {% if not is_admin %}<a href="{{ url_for('admin.login') }}" rel="nofollow">Pannello Admin</a>{% endif %}

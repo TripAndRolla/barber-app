@@ -5,6 +5,7 @@ from datetime import date, datetime, time
 import pytest
 
 import promemoria_whatsapp as pw
+import ratelimit
 from agenda import Agenda, Booking
 from settings import DEFAULT_REMINDER_TEMPLATE, SettingsStore
 
@@ -103,7 +104,7 @@ def test_admin_manual_reminders(env, monkeypatch, tmp_path):
     monkeypatch.setitem(webapp.app.extensions, "settings", store)
     monkeypatch.setitem(webapp.app.extensions, "agenda", env)
     monkeypatch.setenv("BARBER_ADMIN_PASSWORD", "segreta123")
-    admin._failed.clear()
+    ratelimit.reset()
     b = env.create(day=TUE, start=time(17, 30), service="Barba", name="Mario Rossi", phone="333 1234567")
     with webapp.app.test_client() as c:
         token = re.search(r'name="_csrf" value="([^"]+)"', c.get("/admin/login").get_data(as_text=True)).group(1)
@@ -138,7 +139,7 @@ def test_guided_bulk_manual_sending(env, monkeypatch, tmp_path):
     monkeypatch.setitem(webapp.app.extensions, "settings", env.settings)
     monkeypatch.setitem(webapp.app.extensions, "agenda", env)
     monkeypatch.setenv("BARBER_ADMIN_PASSWORD", "segreta123")
-    admin._failed.clear()
+    ratelimit.reset()
     a = env.create(day=TUE, start=time(9, 0), service="Barba", name="Anna Uno", phone="3331111111")
     b = env.create(day=TUE, start=time(10, 0), service="Barba", name="Bruno Due", phone="3332222222")
     c_ = env.create(day=TUE, start=time(11, 0), service="Barba", name="Carlo Tre", phone="3333333333")

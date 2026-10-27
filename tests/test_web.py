@@ -4,6 +4,7 @@ from datetime import datetime
 import pytest
 
 import admin
+import ratelimit
 import app as webapp
 from agenda import Agenda
 from settings import SettingsStore
@@ -17,7 +18,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setitem(webapp.app.extensions, "settings", store)
     monkeypatch.setitem(webapp.app.extensions, "agenda", Agenda(tmp_path / "agenda.md", store, clock=lambda: NOW))
     monkeypatch.delenv("BARBER_ADMIN_PASSWORD", raising=False)
-    admin._failed.clear()
+    ratelimit.reset()
     webapp.app.config["TESTING"] = True
     with webapp.app.test_client() as c:
         yield c
@@ -57,7 +58,8 @@ def test_post_without_csrf_is_rejected(client):
 
 
 def test_admin_panel_requires_password(client):
-    assert "Pannello Admin" in client.get("/").get_data(as_text=True)  # link nel footer
+    home = client.get("/").get_data(as_text=True)
+    assert "Pannello Admin" in home and "P.IVA 05377850754" in home  # footer
     for url in ("/admin", "/admin/settimana", "/admin/clienti", "/admin/listino", "/admin/impostazioni"):
         assert client.get(url).status_code == 302
     login(client)
@@ -167,7 +169,8 @@ def test_confirmation_popup_only_right_after_booking(client):
     assert "Prenotazione confermata!" in page and code in page and "alle <strong>17:30</strong>" in page
     assert "<em>Hai bisogno di un sistema automatizzato per la tua azienda?" in page
     assert 'href="https://wa.me/393348505104"' in page
-    assert 'P.IVA 05377850754' in page
+    assert page.count('P.IVA 05377850754') == 1  # solo nel footer, non nel popup
+    assert 'class="confirm__vat"' not in page
     assert page.count(f'data-copy="{code}"') == 2  # pulsante "Copia" nel popup e nella scheda
     # riaprendo la pagina con il codice il popup non ricompare, il pulsante "Copia" resta
     again = client.get(f"/gestisci/{code}").get_data(as_text=True)

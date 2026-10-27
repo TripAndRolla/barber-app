@@ -3,8 +3,6 @@ from __future__ import annotations
 
 import hmac
 import os
-import threading
-import time as _time
 from datetime import date, timedelta
 from functools import wraps
 
@@ -13,8 +11,9 @@ from flask import (Blueprint, abort, current_app, flash, redirect, render_templa
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from agenda import Agenda, BookingError, parse_date, parse_time
-from customers import build_customers, revenue
 import promemoria_whatsapp as reminders
+import ratelimit
+from customers import build_customers, revenue
 from settings import (DEFAULT_REMINDER_TEMPLATE, GIORNI, MAX_WINDOWS_PER_DAY, NATIONAL_HOLIDAYS,
                       REMINDER_PLACEHOLDERS, Closure, LocalHoliday, Service, SettingsError, SettingsStore,
                       national_holiday_dates)
@@ -43,23 +42,6 @@ def get_store() -> SettingsStore:
 # --------------------------------------------------------------------------
 # Autenticazione
 # --------------------------------------------------------------------------
-
-_failed: dict[str, list[float]] = {}
-_failed_lock = threading.Lock()
-MAX_ATTEMPTS, LOCK_SECONDS = 5, 300
-
-
-def _too_many_attempts(ip: str) -> bool:
-    with _failed_lock:
-        recent = [t for t in _failed.get(ip, []) if _time.time() - t < LOCK_SECONDS]
-        _failed[ip] = recent
-        return len(recent) >= MAX_ATTEMPTS
-
-
-def _record_failure(ip: str) -> None:
-    with _failed_lock:
-        _failed.setdefault(ip, []).append(_time.time())
-
 
 def _check_password(password: str) -> bool:
     env_pw = os.environ.get("BARBER_ADMIN_PASSWORD")
@@ -97,14 +79,14 @@ def login():
     error = None
     if request.method == "POST":
         ip = request.remote_addr or "?"
-        if _too_many_attempts(ip):
+        if ratelimit.too_many_attempts("admin", ip):
             error = "Troppi tentativi falliti. Riprova tra qualche minuto."
         elif _check_password(request.form.get("password", "")):
             _login_session()
             next_url = request.args.get("next", "")
             return redirect(next_url if next_url.startswith("/admin") else url_for("admin.week"))
         else:
-            _record_failure(ip)
+            ratelimit.record_failure("admin", ip)
             error = "Password non corretta."
     return render_template("admin/login.html", error=error)
 
@@ -411,7 +393,7 @@ def _render_settings(error=None, view=None, status=200):
     view = view or {
         "hours": _hours_view_from_settings(settings), "slot_step": settings.slot_step,
         "horizon_days": settings.horizon_days, "shop_name": settings.shop_name,
-        "address": settings.address, "phone": settings.phone,
+        "address": settings.address, "phone": settings.phone, "vat_number": settings.vat_number,
     }
     today = get_agenda().now().date()
     closures = sorted(enumerate(settings.closures), key=lambda ic: ic[1].start)
@@ -447,13 +429,15 @@ def settings_page():
             settings.shop_name = form.get("shop_name", "").strip()
             settings.address = form.get("address", "").strip()
             settings.phone = form.get("phone", "").strip()
+            settings.vat_number = form.get("vat_number", "").replace(" ", "").strip()
             store.save(settings)
             flash("Orari e impostazioni salvati. Valgono da subito per le prenotazioni online.", "success")
             return redirect(url_for("admin.settings_page"))
         except SettingsError as exc:
             view = {"hours": _hours_view_from_form(form), "slot_step": form.get("slot_step", ""),
                     "horizon_days": form.get("horizon_days", ""), "shop_name": form.get("shop_name", ""),
-                    "address": form.get("address", ""), "phone": form.get("phone", "")}
+                    "address": form.get("address", ""), "phone": form.get("phone", ""),
+                    "vat_number": form.get("vat_number", "")}
             return _render_settings(str(exc), view, 422)
     return _render_settings()
 

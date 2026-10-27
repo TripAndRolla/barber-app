@@ -254,9 +254,11 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .confirm__code > span { font-size: .75rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
 .confirm__code strong { font-size: 1.8rem; letter-spacing: .2em; font-variant-numeric: tabular-nums; }
 .confirm__card form { margin: 18px 0 0; }
-.confirm__promo { margin: 14px 8px 0; text-align: center; color: #f3f2ef; font-size: .92rem; line-height: 1.45; }
-.confirm__promo a { color: #fff; font-weight: 600; }
-.confirm__vat { margin: 4px 0 0; text-align: center; color: rgba(243, 242, 239, .7); font-size: .78rem; letter-spacing: .04em; }
+.confirm__promo {
+  margin: 14px 0 0; padding: 14px 18px; text-align: center; font-size: .92rem; line-height: 1.45;
+  background: #ffd84d; color: #1a1600; border-radius: 18px; box-shadow: var(--shadow-lift);
+}
+.confirm__promo a { color: #1a1600; font-weight: 700; }
 
 /* Pulsante "Copia" del codice -------------------------------------------- */
 .copy-btn {

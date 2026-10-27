@@ -144,6 +144,7 @@ class Settings:
     shop_name: str = "Barber Shop Stefano Stella"
     address: str = "Via Lecce 122, Merine (LE)"
     phone: str = "3281890726"
+    vat_number: str = "05377850754"
     services: list[Service] = field(default_factory=lambda: [
         Service("Taglio", 45),
         Service("Barba", 30),
@@ -248,6 +249,7 @@ class Settings:
             shop_name=data.get("shop_name", default.shop_name),
             address=data.get("address", default.address),
             phone=data.get("phone", default.phone),
+            vat_number=data.get("vat_number", default.vat_number),
             services=[Service(**s) for s in data["services"]] if "services" in data else default.services,
             hours={int(k): [tuple(w) for w in v] for k, v in data["hours"].items()} if "hours" in data else default.hours,
             slot_step=int(data.get("slot_step", default.slot_step)),
@@ -293,6 +295,8 @@ def _minutes(hhmm: str) -> int:
 def validate(settings: Settings) -> None:
     if not settings.shop_name.strip():
         raise SettingsError("Il nome del negozio è obbligatorio.")
+    if settings.vat_number and not re.fullmatch(r"\d{11}", settings.vat_number):
+        raise SettingsError("La partita IVA deve avere 11 cifre.")
     names = set()
     for s in settings.services:
         if not s.name.strip() or len(s.name) > 40 or "|" in s.name:
