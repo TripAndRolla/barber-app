@@ -183,6 +183,47 @@
     });
   }
 
+  // Pulsante "Copia" del codice prenotazione
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    return new Promise(function (resolve, reject) {  // browser vecchi o pagina non HTTPS
+      var area = document.createElement("textarea");
+      area.value = text;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(area);
+      if (ok) resolve(); else reject();
+    });
+  }
+  document.querySelectorAll("[data-copy]").forEach(function (btn) {
+    var label = btn.querySelector(".copy-btn__label");
+    var timer;
+    btn.addEventListener("click", function () {
+      copyText(btn.dataset.copy).then(function () {
+        btn.classList.add("is-copied");
+        label.textContent = "Copiato!";
+      }, function () {
+        label.textContent = "Tieni premuto il codice per copiarlo";
+      });
+      clearTimeout(timer);
+      timer = setTimeout(function () { btn.classList.remove("is-copied"); label.textContent = "Copia"; }, 2000);
+    });
+  });
+
+  // Popup di conferma prenotazione: si apre da solo; si chiude col pulsante, con Esc o toccando fuori
+  document.querySelectorAll("dialog[data-autoshow]").forEach(function (dialog) {
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+    dialog.addEventListener("click", function (e) {
+      if (e.target === dialog) dialog.close();
+    });
+  });
+
   document.querySelectorAll("[data-guided]").forEach(initGuided);
   document.querySelectorAll("[data-week]").forEach(initWeek);
   document.querySelectorAll("[data-weeklist]").forEach(initWeeklist);

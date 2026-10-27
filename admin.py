@@ -24,6 +24,14 @@ bp = Blueprint("admin", __name__, url_prefix="/admin")
 GRID_STEP_MIN = 5  # risoluzione della griglia settimanale
 
 
+@bp.after_request
+def no_cache(response):
+    """Le pagine del pannello non vanno conservate dal browser: sempre aggiornate (anche col tasto
+    Indietro) e nessun dato di clienti/incassi lasciato nella cache del dispositivo."""
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 def get_agenda() -> Agenda:
     return current_app.extensions["agenda"]
 

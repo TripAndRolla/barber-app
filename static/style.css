@@ -229,6 +229,47 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .ticket__details dd { margin: 2px 0 0; font-weight: 600; }
 @media (max-width: 600px) { .ticket { grid-template-columns: 1fr; } }
 
+/* Popup di conferma prenotazione ----------------------------------------- */
+.confirm {
+  border: 0; padding: 16px; margin: auto; background: transparent; max-width: 420px; width: 100%;
+  color: var(--ink); overflow: visible;
+}
+.confirm::backdrop { background: rgba(10, 10, 10, .55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.confirm[open] { animation: confirm-in .25s ease-out; }
+@keyframes confirm-in { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+.confirm__card {
+  background: var(--surface); border-radius: 28px; box-shadow: var(--shadow-lift);
+  padding: 30px 24px 24px; text-align: center;
+}
+.confirm__icon {
+  display: inline-grid; place-items: center; width: 64px; height: 64px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-ink); font-size: 1.9rem; font-weight: 700; margin-bottom: 12px;
+}
+.confirm__title { font-size: 1.6rem; font-weight: 600; margin: 0 0 8px; }
+.confirm__when { margin: 0 0 16px; line-height: 1.5; }
+.confirm__code {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 0 auto 12px; padding: 12px 18px;
+  border-radius: 18px; background: var(--surface-2); border: 1px dashed var(--line);
+}
+.confirm__code > span { font-size: .75rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+.confirm__code strong { font-size: 1.8rem; letter-spacing: .2em; font-variant-numeric: tabular-nums; }
+.confirm__card form { margin: 18px 0 0; }
+.confirm__promo { margin: 14px 8px 0; text-align: center; color: #f3f2ef; font-size: .92rem; line-height: 1.45; }
+.confirm__promo a { color: #fff; font-weight: 600; }
+
+/* Pulsante "Copia" del codice -------------------------------------------- */
+.copy-btn {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; min-height: 36px; padding: 6px 14px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  font: 600 .85rem var(--font); cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+}
+.copy-btn:hover { border-color: var(--ink); }
+.copy-btn.is-copied { background: var(--ok-bg); color: var(--ok-ink); border-color: transparent; }
+.copy-btn__icon { flex: none; }
+.ticket__code .copy-btn { background: transparent; color: inherit; border-color: color-mix(in srgb, currentColor 40%, transparent); }
+.ticket__code .copy-btn.is-copied { background: var(--ok-bg); color: var(--ok-ink); border-color: transparent; }
+.ticket__code strong, .confirm__code strong { user-select: all; }
+
 /* Footer ----------------------------------------------------------------- */
 .footer { padding: 26px 0; font-size: .9rem; color: var(--muted); }
 .footer__inner { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }

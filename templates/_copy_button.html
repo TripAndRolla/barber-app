@@ -1,0 +1,8 @@
+{# Pulsante "Copia" per il codice prenotazione. Variabile: code #}
+<button type="button" class="copy-btn" data-copy="{{ code }}" aria-label="Copia il codice {{ code }}">
+  <svg class="copy-btn__icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+    <rect x="9" y="9" width="11" height="11" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/>
+    <path d="M5 15V6a2 2 0 0 1 2-2h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+  <span class="copy-btn__label" aria-live="polite">Copia</span>
+</button>

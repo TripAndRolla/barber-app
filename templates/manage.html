@@ -15,6 +15,7 @@
   <div class="ticket__code">
     <span class="muted">Codice prenotazione</span>
     <strong>{{ booking.code }}</strong>
+    {% with code=booking.code %}{% include "_copy_button.html" %}{% endwith %}
   </div>
   <dl class="ticket__details">
     <div><dt>Servizio</dt><dd>{{ booking.service }}</dd></div>
@@ -25,6 +26,30 @@
     {% if booking.notes %}<div><dt>Note</dt><dd>{{ booking.notes }}</dd></div>{% endif %}
   </dl>
 </section>
+
+{% if ('event', 'created') in get_flashed_messages(with_categories=true) %}
+{# popup di conferma, aperto automaticamente subito dopo la prenotazione #}
+<dialog class="confirm" data-autoshow aria-labelledby="confirm-title">
+  <div class="confirm__card">
+    <div class="confirm__icon" aria-hidden="true">✓</div>
+    <h2 id="confirm-title" class="confirm__title">Prenotazione confermata!</h2>
+    <p class="confirm__when">{{ booking.service }}<br>
+      <strong>{{ booking.day_label|capitalize }}</strong> alle <strong>{{ booking.start.strftime('%H:%M') }}</strong></p>
+    <div class="confirm__code">
+      <span>Il tuo codice</span>
+      <strong>{{ booking.code }}</strong>
+      {% with code=booking.code %}{% include "_copy_button.html" %}{% endwith %}
+    </div>
+    <p class="muted small">Conservalo: ti serve per modificare o annullare l'appuntamento.<br>
+      {% if shop.address %}{{ shop.address }}{% endif %}</p>
+    <form method="dialog">
+      <button class="btn btn--primary btn--block" type="submit" autofocus>Perfetto, a presto!</button>
+    </form>
+  </div>
+  <p class="confirm__promo"><em>Hai bisogno di un sistema automatizzato per la tua azienda?
+    Scrivi a <a href="https://wa.me/393348505104" target="_blank" rel="noopener">+39 334 850 5104</a></em></p>
+</dialog>
+{% endif %}
 
 {% if editable %}
 <section class="card card--form">

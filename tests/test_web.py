@@ -149,3 +149,25 @@ def test_ping_is_lightweight(client, monkeypatch):
         r = method("/ping")
         assert r.status_code == 200 and r.headers["Cache-Control"] == "no-store"
     assert client.get("/ping").get_data(as_text=True) == "OK"
+
+
+def test_admin_pages_are_never_cached(client):
+    login(client)
+    for url in ("/admin/login", "/admin/settimana", "/admin/promemoria", "/admin/clienti"):
+        assert client.get(url).headers.get("Cache-Control") == "no-store", url
+
+
+def test_confirmation_popup_only_right_after_booking(client):
+    token = csrf(client, "/")
+    r = client.post("/prenota", data={"_csrf": token, "service": "Barba", "date": "2026-10-26", "time": "17:30",
+                                      "name": "Mario Rossi", "phone": "333 1234567"})
+    code = r.headers["Location"].rsplit("/", 1)[1]
+    page = client.get(f"/gestisci/{code}").get_data(as_text=True)
+    assert "<dialog class=\"confirm\" data-autoshow" in page
+    assert "Prenotazione confermata!" in page and code in page and "alle <strong>17:30</strong>" in page
+    assert "<em>Hai bisogno di un sistema automatizzato per la tua azienda?" in page
+    assert 'href="https://wa.me/393348505104"' in page
+    assert page.count(f'data-copy="{code}"') == 2  # pulsante "Copia" nel popup e nella scheda
+    # riaprendo la pagina con il codice il popup non ricompare, il pulsante "Copia" resta
+    again = client.get(f"/gestisci/{code}").get_data(as_text=True)
+    assert "data-autoshow" not in again and again.count(f'data-copy="{code}"') == 1
