@@ -23,7 +23,13 @@ Gli orari proposti non si sovrappongono ad altri appuntamenti, non sono nel pass
 
 ## Area clienti (`/area-clienti`)
 
-Il cliente accede con il **numero di telefono oppure con il codice di una sua prenotazione** (nessuna password da ricordare) e vede tutte le prenotazioni fatte con quel numero: prossimi appuntamenti con "Modifica", "Annulla" e codice copiabile, storico, e "Nuova prenotazione" con nome e telefono già compilati. Può restare collegato 30 giorni. Dopo 5 tentativi errati l'accesso è bloccato per 5 minuti.
+Ogni cliente può creare un **account con e-mail e password** (nome, e-mail, telefono, password di almeno 8 caratteri; le password sono salvate solo cifrate in `clienti.json`, online nel repository dati privato). Dall'area vede le sue prenotazioni con "Modifica", "Annulla" e codice copiabile, lo storico, prenota con i dati già compilati e può cambiare la password. Prenotare senza account resta possibile.
+
+**Quali prenotazioni vede un account**: quelle fatte mentre era collegato e, dopo aver inserito il **codice di una sua prenotazione** (in registrazione o con "Collega"), tutte quelle fatte con lo stesso numero di telefono. Senza codice, registrarsi con il numero di un altro non mostra le sue prenotazioni.
+
+**Password dimenticata**: il cliente contatta il negozio; il titolare da *Pannello Admin → Clienti → Account registrati* (o dalla scheda del cliente) preme "Reimposta password", ottiene una password temporanea da inviare con un tocco su WhatsApp, e al primo accesso il cliente deve sceglierne una nuova. Dalla stessa pagina si può eliminare un account (le prenotazioni restano in agenda).
+
+Dopo 5 tentativi di accesso errati l'accesso è bloccato per 5 minuti.
 
 ## Avvisi al titolare
 

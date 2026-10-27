@@ -125,13 +125,17 @@ def message_text(b: Booking, template: str, today: date) -> str:
     return template.format(**message_params(b, today))
 
 
-def whatsapp_link(b: Booking, text: str) -> str | None:
+def whatsapp_link_to(phone: str, text: str) -> str | None:
     """Link wa.me con il messaggio già scritto: apre WhatsApp sul telefono/PC del titolare."""
     try:
-        to = to_whatsapp_number(b.phone)
+        to = to_whatsapp_number(phone)
     except BookingError:
         return None
     return f"https://wa.me/{to}?text={urllib.parse.quote(text)}"
+
+
+def whatsapp_link(b: Booking, text: str) -> str | None:
+    return whatsapp_link_to(b.phone, text)
 
 
 # --------------------------------------------------------------------------

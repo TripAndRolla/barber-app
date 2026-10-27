@@ -15,6 +15,14 @@
   <a class="btn btn--primary btn--small" href="{{ url_for('admin.week', nome=c.name, telefono=c.phone, email=c.email) }}#nuovo">+ Nuovo appuntamento</a>
 </div>
 
+{% include "admin/_temp_password.html" %}
+{% if accounts %}
+  <section class="card">
+    <h2 class="card__title">Account dell'area clienti</h2>
+    {% for a in accounts %}{% with back=request.path %}{% include "admin/_account_box.html" %}{% endwith %}{% endfor %}
+  </section>
+{% endif %}
+
 <div class="stats">
   <div class="stat"><span class="stat__label">Visite</span><span class="stat__value">{{ c.visits }}</span></div>
   <div class="stat"><span class="stat__label">Spesa {{ now.year }}</span><span class="stat__value">{{ c.spend_year|euro }}</span></div>

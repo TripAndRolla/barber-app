@@ -15,3 +15,14 @@ def isolated_notifications(tmp_path, monkeypatch):
     store = NotificationStore(LocalFile(tmp_path / "notifiche.json"))
     monkeypatch.setitem(webapp.app.extensions, "notifications", store)
     return store
+
+
+@pytest.fixture(autouse=True)
+def isolated_accounts(tmp_path, monkeypatch):
+    """Account clienti in un file temporaneo, mai in clienti.json vero."""
+    import app as webapp
+    from accounts import AccountStore
+    from storage import LocalFile
+    store = AccountStore(LocalFile(tmp_path / "clienti.json"))
+    monkeypatch.setitem(webapp.app.extensions, "accounts", store)
+    return store

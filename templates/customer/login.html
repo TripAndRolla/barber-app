@@ -4,23 +4,31 @@
 <div class="login-choice">
   <section class="card card--narrow login-card">
     <span class="login-card__kicker">Clienti</span>
-    <h1 class="section-title">Le tue prenotazioni</h1>
-    <p class="muted">Accedi con il tuo <strong>numero di telefono</strong> oppure con il <strong>codice di una prenotazione</strong>: vedrai tutti i tuoi appuntamenti e potrai modificarli o annullarli.</p>
+    <h1 class="section-title">Accedi</h1>
+    <p class="muted">Entra nel tuo account per vedere le tue prenotazioni, modificarle o annullarle.</p>
     {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
     <form method="post">
       <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
       <label class="field">
-        <span>Telefono o codice prenotazione</span>
-        <input class="input input--login" name="accesso" required maxlength="20" autocomplete="off"
-               autocapitalize="characters" placeholder="es. 333 1234567 oppure K7M2QX"
-               value="{{ form.get('accesso', '') }}" autofocus>
+        <span>E-mail</span>
+        <input class="input" type="email" name="email" required autocomplete="email" maxlength="80"
+               value="{{ form.get('email', '') }}" autofocus>
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input class="input" type="password" name="password" required autocomplete="current-password">
       </label>
       <label class="check"><input type="checkbox" name="ricordami" value="1" checked> Resta collegato su questo dispositivo (30 giorni)</label>
       <button class="btn btn--primary btn--block" type="submit">Accedi</button>
     </form>
-    <p class="hint center">Usa il numero indicato quando hai prenotato.
-      Non hai ancora prenotato? <a href="{{ url_for('index') }}#prenota">Prenota ora</a>.</p>
+    <p class="hint center">
+      Non hai un account? <a href="{{ url_for('customer.register') }}"><strong>Registrati</strong></a><br>
+      Password dimenticata? Contatta il negozio{% if shop.phone %}:
+      <a href="https://wa.me/39{{ shop.phone|replace(' ', '') }}" target="_blank" rel="noopener">WhatsApp</a> ·
+      <a href="tel:{{ shop.phone|replace(' ', '') }}">{{ shop.phone }}</a>{% endif %}, ti daremo una password temporanea.
+    </p>
   </section>
-  <p class="center muted small">Sei il titolare? <a href="{{ url_for('admin.login') }}" rel="nofollow">Accedi al Pannello Admin</a></p>
+  <p class="center muted small">Vuoi solo gestire una prenotazione? <a href="{{ url_for('lookup') }}">Usa il codice</a> ·
+    Sei il titolare? <a href="{{ url_for('admin.login') }}" rel="nofollow">Pannello Admin</a></p>
 </div>
 {% endblock %}

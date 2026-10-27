@@ -653,3 +653,19 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .copy-field .copy-btn { margin-top: 0; flex: none; }
 .alert-test { margin: 10px 0 0; }
 @media (max-width: 720px) { .alert-item__at { margin-left: 0; width: 100%; } }
+.link-card__form { display: flex; gap: 8px; flex-wrap: wrap; }
+.link-card__form .input { flex: 1 1 180px; }
+
+/* Account clienti (pannello) */
+.account-list { padding: 8px 20px; }
+.account-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.account-row:last-child { border-bottom: 0; }
+.account-row__info { display: flex; flex-direction: column; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+.account-row__info .badge { margin-right: 4px; }
+.account-row__actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.account-row__actions form { margin: 0; }
+.temp-pw { border: 2px solid var(--info-ink); }
+.temp-pw p { margin: 4px 0 10px; }
+.temp-pw__value { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.temp-pw__value code { font-size: 1.4rem; letter-spacing: .08em; padding: 6px 14px; }
+.temp-pw__value .copy-btn { margin-top: 0; }

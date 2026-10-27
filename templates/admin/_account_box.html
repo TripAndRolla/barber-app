@@ -1,0 +1,27 @@
+{# Riquadro di un account cliente con reset password ed eliminazione. Variabili: a (account), back (url di ritorno) #}
+<div class="account-row">
+  <div class="account-row__info">
+    <strong>{{ a.name }}</strong>
+    <span class="muted small">{{ a.email }} · {{ a.phone }}</span>
+    <span class="small">
+      {% if a.phone_verified %}<span class="badge badge--confermata">numero verificato</span>
+      {% else %}<span class="badge">numero non verificato</span>{% endif %}
+      {% if a.must_change_password %}<span class="badge badge--modificata">password temporanea</span>{% endif %}
+      <span class="muted">registrato il {{ a.created_at[8:10] }}/{{ a.created_at[5:7] }}/{{ a.created_at[:4] }}{% if a.last_login %} · ultimo accesso {{ a.last_login[8:10] }}/{{ a.last_login[5:7] }}{% endif %}</span>
+    </span>
+  </div>
+  <div class="account-row__actions">
+    <form method="post" action="{{ url_for('admin.account_reset', account_id=a.id) }}"
+          data-confirm="Creare una password temporanea per {{ a.name }}? Quella attuale non funzionerà più.">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="next" value="{{ back }}">
+      <button class="btn btn--small btn--ghost" type="submit">Reimposta password</button>
+    </form>
+    <form method="post" action="{{ url_for('admin.account_delete', account_id=a.id) }}"
+          data-confirm="Eliminare l'account di {{ a.name }}? Le sue prenotazioni restano in agenda.">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <input type="hidden" name="next" value="{{ back }}">
+      <button class="btn btn--small btn--danger-ghost" type="submit">Elimina account</button>
+    </form>
+  </div>
+</div>

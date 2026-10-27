@@ -4,8 +4,8 @@
 <div class="page-head">
   <div>
     <p class="eyebrow eyebrow--dark">Area clienti</p>
-    <h1 class="section-title">Ciao {{ (profile.name.split(' ')[0] if profile else customer_name) or '' }}!</h1>
-    <p class="muted small">{% if profile %}{{ profile.phone }}{% endif %}{% if visits %} · {{ visits }} visit{{ 'a' if visits == 1 else 'e' }} da noi{% endif %}</p>
+    <h1 class="section-title">Ciao {{ account.name.split(' ')[0] }}!</h1>
+    <p class="muted small">{{ account.email }} · {{ account.phone }}{% if visits %} · {{ visits }} visit{{ 'a' if visits == 1 else 'e' }} da noi{% endif %}</p>
   </div>
   <a class="btn btn--primary" href="{{ url_for('index') }}#prenota">+ Nuova prenotazione</a>
 </div>
@@ -45,6 +45,19 @@
   </div>
 {% endif %}
 
+<section class="card link-card">
+  <h2 class="card__title">Non vedi una prenotazione?</h2>
+  <p class="muted small">
+    {% if account.phone_verified %}Vedi già tutte le prenotazioni fatte con il numero {{ account.phone }}. Se ne hai fatte con un altro numero, inserisci qui il loro codice.
+    {% else %}Inserisci il codice di una prenotazione fatta con il numero {{ account.phone }}: da quel momento vedrai qui tutte le prenotazioni di questo numero.{% endif %}
+  </p>
+  <form method="post" action="{{ url_for('customer.link') }}" class="link-card__form">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <input class="input input--code" name="code" required maxlength="12" autocomplete="off" autocapitalize="characters" placeholder="es. K7M2QX" aria-label="Codice prenotazione">
+    <button class="btn btn--ghost" type="submit">Collega</button>
+  </form>
+</section>
+
 {% if history %}
   <h2 class="card__title">Storico</h2>
   <ul class="hist">
@@ -57,4 +70,5 @@
     {% endfor %}
   </ul>
 {% endif %}
+<p class="center small"><a href="{{ url_for('customer.change_password') }}">Cambia password</a></p>
 {% endblock %}

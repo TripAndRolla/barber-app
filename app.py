@@ -17,6 +17,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from agenda import Agenda, BookingError, format_day_it, normalize_code, parse_date, parse_time
 import customer_area
 import notifications
+from accounts import AccountStore
 from settings import SettingsStore, format_price
 from storage import open_data_file
 
@@ -66,6 +67,8 @@ app.extensions["agenda"] = Agenda(open_data_file(
     os.environ.get("BARBER_AGENDA_PATH", _default_agenda_path()), "agenda.md"), _settings_store)
 app.extensions["notifications"] = notifications.NotificationStore(open_data_file(
     os.environ.get("BARBER_NOTIFICATIONS_PATH", BASE_DIR / "notifiche.json"), "notifiche.json"))
+app.extensions["accounts"] = AccountStore(open_data_file(
+    os.environ.get("BARBER_ACCOUNTS_PATH", BASE_DIR / "clienti.json"), "clienti.json"))
 
 
 def get_agenda() -> Agenda:
@@ -163,8 +166,9 @@ def ping():
 def index():
     min_d, max_d = _date_bounds()
     form = {}
-    if customer_area.current_customer():  # cliente collegato: nome e telefono già compilati
-        form = {"name": session.get("customer_name", ""), "phone": customer_area.current_customer()}
+    account = customer_area.current_account()
+    if account:  # cliente collegato: dati già compilati
+        form = {"name": account["name"], "phone": account["phone"].replace("+39 ", ""), "email": account["email"]}
     return render_template("index.html", form=form, min_date=min_d, max_date=max_d)
 
 
@@ -204,6 +208,7 @@ def book():
     except BookingError as exc:
         min_d, max_d = _date_bounds()
         return render_template("index.html", form=form, error=str(exc), min_date=min_d, max_date=max_d), 422
+    customer_area.link_new_booking(booking)
     alert_owner("nuova", booking)
     flash("created", "event")
     return redirect(url_for("manage", code=booking.code))

@@ -15,6 +15,7 @@ from agenda import Agenda, BookingError, parse_date, parse_time
 import notifications
 import promemoria_whatsapp as reminders
 import ratelimit
+from accounts import AccountError, AccountStore
 from customers import build_customers, revenue
 from settings import (DEFAULT_REMINDER_TEMPLATE, GIORNI, MAX_WINDOWS_PER_DAY, NATIONAL_HOLIDAYS,
                       REMINDER_PLACEHOLDERS, Closure, LocalHoliday, Service, SettingsError, SettingsStore,
@@ -271,6 +272,7 @@ def customers():
         items.sort(key=lambda c: c.name.lower())
     return render_template(
         "admin/customers.html", customers=items, q=request.args.get("q", ""), order=order, year=now.year,
+        account_count=len(get_accounts().all()),
         revenue_year=revenue(bookings, settings, now, date(now.year, 1, 1)),
         revenue_total=revenue(bookings, settings, now, date.min),
     )
@@ -289,7 +291,64 @@ def customer_detail(cid: str):
         if b.active and b.starts_at <= now:
             by_year[b.day.year] = by_year.get(b.day.year, 0) + b.amount(settings)
     return render_template("admin/customer.html", c=customer, now=now, settings=settings,
-                           by_year=sorted(by_year.items(), reverse=True))
+                           by_year=sorted(by_year.items(), reverse=True),
+                           accounts=get_accounts().for_phone(customer.phone) if customer.phone else [],
+                           temp_password=session.pop("temp_password", None))
+
+
+# --------------------------------------------------------------------------
+# Account dei clienti (email + password)
+# --------------------------------------------------------------------------
+
+def get_accounts() -> AccountStore:
+    return current_app.extensions["accounts"]
+
+
+def _back_to(default: str) -> str:
+    back = request.form.get("next", "")
+    return back if back.startswith("/admin/") else default
+
+
+@bp.get("/account")
+@admin_required
+def accounts_page():
+    items = sorted(get_accounts().all(), key=lambda a: a["name"].lower())
+    q = request.args.get("q", "").strip().lower()
+    if q:
+        items = [a for a in items if q in a["name"].lower() or q in a["email"] or q.replace(" ", "") in a["phone"].replace(" ", "")]
+    return render_template("admin/accounts.html", accounts=items, q=request.args.get("q", ""),
+                           temp_password=session.pop("temp_password", None))
+
+
+@bp.post("/account/<account_id>/reset")
+@admin_required
+def account_reset(account_id: str):
+    account = get_accounts().get(account_id)
+    try:
+        temp = get_accounts().reset_password(account_id)
+    except AccountError as exc:
+        flash(str(exc), "error")
+    else:
+        # mostrata una sola volta nella pagina successiva, da comunicare al cliente
+        text = (f"Ciao {account['name'].split(' ')[0]}, la tua password temporanea per l'area clienti di "
+                f"{get_store().load().shop_name} è: {temp}\n"
+                "Al primo accesso ti verrà chiesto di sceglierne una nuova.")
+        session["temp_password"] = {"id": account_id, "name": account["name"], "email": account["email"],
+                                    "password": temp, "whatsapp": reminders.whatsapp_link_to(account["phone"], text)}
+    return redirect(_back_to(url_for("admin.accounts_page")))
+
+
+@bp.post("/account/<account_id>/elimina")
+@admin_required
+def account_delete(account_id: str):
+    account = get_accounts().get(account_id)
+    if account:
+        try:
+            get_accounts().delete(account_id)
+            flash(f"Account di {account['name']} ({account['email']}) eliminato. Le prenotazioni restano in agenda.", "success")
+        except AccountError as exc:
+            flash(str(exc), "error")
+    return redirect(_back_to(url_for("admin.accounts_page")))
 
 
 # --------------------------------------------------------------------------

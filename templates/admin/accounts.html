@@ -1,0 +1,28 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Account clienti{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('admin.customers') }}">‹ Clienti</a></p>
+<div class="page-head">
+  <div>
+    <h1 class="section-title">Account registrati</h1>
+    <p class="muted small">Clienti che hanno creato un account con e-mail e password. Se qualcuno dimentica la password, crea qui una password temporanea.</p>
+  </div>
+</div>
+
+{% include "admin/_temp_password.html" %}
+
+<form method="get" class="toolbar">
+  <input class="input" type="search" name="q" value="{{ q }}" placeholder="Cerca per nome, e-mail o telefono…" aria-label="Cerca account">
+  <button class="btn btn--ghost" type="submit">Cerca</button>
+</form>
+
+{% if accounts %}
+  <div class="card account-list">
+    {% for a in accounts %}
+      {% with back=request.full_path %}{% include "admin/_account_box.html" %}{% endwith %}
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card center"><p class="muted">{% if q %}Nessun account corrisponde alla ricerca.{% else %}Nessun cliente si è ancora registrato.{% endif %}</p></div>
+{% endif %}
+{% endblock %}

@@ -37,44 +37,133 @@ def book(client, token, time="09:00", phone="333 1234567", name="Mario Rossi", d
     return r.headers["Location"].rsplit("/", 1)[1]
 
 
-def test_customer_login_and_own_bookings_only(env):
+def register(client, token, email="mario@example.com", phone="333 1234567", password="password123", code=""):
+    return client.post("/area-clienti/registrati", data={
+        "_csrf": token, "name": "Mario Rossi", "email": email, "phone": phone,
+        "password": password, "password2": password, "code": code})
+
+
+def login(client, token, email="mario@example.com", password="password123"):
+    return client.post("/area-clienti/accedi", data={"_csrf": token, "email": email, "password": password})
+
+
+def logout(client, token):
+    client.post("/area-clienti/esci", data={"_csrf": token})
+
+
+def test_register_login_and_password_rules(env, isolated_accounts):
     with webapp.app.test_client() as c:
         token = csrf(c)
-        mine1 = book(c, token, "09:00", "333 1234567")
-        mine2 = book(c, token, "10:00", "+39 333-123-4567", date="2026-10-28")  # stesso numero scritto diverso
-        other = book(c, token, "11:00", "347 0000000", name="Altro Cliente")
         assert c.get("/area-clienti").status_code == 302  # serve l'accesso
+        r = register(c, token, password="corta")
+        assert "almeno 8 caratteri" in r.get_data(as_text=True)
+        r = register(c, token, phone="12345")
+        assert "telefono" in r.get_data(as_text=True)
+        assert register(c, token).status_code == 302
+        account = isolated_accounts.by_email("MARIO@example.com")
+        assert account["phone"] == "+39 3331234567" and "password123" not in str(account)  # solo l'hash
+        logout(c, token)
+        assert "esiste già un account" in register(c, token).get_data(as_text=True).lower()
 
-        bad = c.post("/area-clienti/accedi", data={"_csrf": token, "accesso": "340 9999999"})
-        assert "Nessuna prenotazione trovata" in bad.get_data(as_text=True)  # numero senza prenotazioni
-        bad = c.post("/area-clienti/accedi", data={"_csrf": token, "accesso": "ZZZZZZ"})
-        assert "Nessuna prenotazione trovata" in bad.get_data(as_text=True)  # codice inesistente
-        # accesso con il solo numero di telefono (scritto in un altro formato)
-        ok = c.post("/area-clienti/accedi", data={"_csrf": token, "accesso": "+39 333 123 4567"})
-        assert ok.status_code == 302
+        assert "non corretti" in login(c, token, password="sbagliata1").get_data(as_text=True)
+        assert login(c, token, email="Mario@Example.com").status_code == 302
         area = c.get("/area-clienti").get_data(as_text=True)
-        assert mine1 in area and mine2 in area and other not in area
-        assert "Ciao Mario!" in area and 'data-copy="' + mine1 + '"' in area
-        # la home precompila nome e telefono
+        assert "Ciao Mario!" in area and "mario@example.com" in area
+        # la home precompila i dati del cliente collegato
         home = c.get("/").get_data(as_text=True)
-        assert 'value="Mario Rossi"' in home and 'value="3331234567"' in home and "Le mie prenotazioni" in home
-        c.post("/area-clienti/esci", data={"_csrf": token})
-        assert c.get("/area-clienti").status_code == 302
-        # accesso con il solo codice prenotazione: stesse prenotazioni dello stesso numero
-        ok = c.post("/area-clienti/accedi", data={"_csrf": token, "accesso": mine2.lower()})
-        assert ok.status_code == 302
-        area = c.get("/area-clienti").get_data(as_text=True)
-        assert mine1 in area and mine2 in area and other not in area
+        assert 'value="Mario Rossi"' in home and 'value="3331234567"' in home and 'value="mario@example.com"' in home
 
 
-def test_customer_login_rate_limited(env):
+def test_phone_alone_does_not_reveal_bookings(env):
+    """Registrarsi con il numero di un altro non basta: serve il codice di una sua prenotazione."""
     with webapp.app.test_client() as c:
         token = csrf(c)
+        victim = book(c, token, "09:00", "333 1234567")
+        register(c, token, email="intruso@example.com", phone="333 1234567")
+        area = c.get("/area-clienti").get_data(as_text=True)
+        assert victim not in area and "Non hai appuntamenti in programma" in area
+        r = c.post("/area-clienti/collega", data={"_csrf": token, "code": "ZZZZZZ"}, follow_redirects=True)
+        assert "Nessuna prenotazione trovata" in r.get_data(as_text=True)
+
+
+def test_code_links_all_bookings_of_the_number(env, isolated_accounts):
+    with webapp.app.test_client() as c:
+        token = csrf(c)
+        first = book(c, token, "09:00", "333 1234567")
+        second = book(c, token, "10:00", "+39 333-123-4567", date="2026-10-28")
+        other = book(c, token, "11:00", "347 0000000", name="Altro Cliente")
+        register(c, token, code=first.lower())  # codice inserito in registrazione
+        area = c.get("/area-clienti").get_data(as_text=True)
+        assert first in area and second in area and other not in area
+        assert isolated_accounts.by_email("mario@example.com")["phone_verified"] is True
+        # una prenotazione fatta da collegato entra subito nell'account
+        third = book(c, token, "12:00", "333 1234567", date="2026-10-29")
+        assert third in c.get("/area-clienti").get_data(as_text=True)
+
+
+def test_booking_while_logged_in_is_linked_even_if_number_unverified(env):
+    with webapp.app.test_client() as c:
+        token = csrf(c)
+        register(c, token)
         code = book(c, token)
+        assert code in c.get("/area-clienti").get_data(as_text=True)
+
+
+def test_login_rate_limited(env):
+    with webapp.app.test_client() as c:
+        token = csrf(c)
+        register(c, token)
+        logout(c, token)
         for _ in range(5):
-            c.post("/area-clienti/accedi", data={"_csrf": token, "accesso": "XXXXXX"})
-        r = c.post("/area-clienti/accedi", data={"_csrf": token, "accesso": code})
-        assert "Troppi tentativi" in r.get_data(as_text=True)
+            login(c, token, password="sbagliata1")
+        assert "Troppi tentativi" in login(c, token).get_data(as_text=True)
+
+
+def test_owner_reset_password_forces_change(env, isolated_accounts):
+    with webapp.app.test_client() as c:
+        token = csrf(c)
+        register(c, token)
+        logout(c, token)
+        c.post("/admin/login", data={"_csrf": token, "password": "segreta123"})
+        account = isolated_accounts.by_email("mario@example.com")
+        assert "Mario Rossi" in c.get("/admin/account").get_data(as_text=True)
+        c.post(f"/admin/account/{account['id']}/reset", data={"_csrf": token, "next": "/admin/account"})
+        page = c.get("/admin/account").get_data(as_text=True)
+        temp = re.search(r'<code>([a-z0-9]{10})</code>', page).group(1)
+        assert "https://wa.me/393331234567?text=" in page  # invio della password al cliente
+        assert "<code>" not in c.get("/admin/account").get_data(as_text=True)  # mostrata una volta sola
+        c.post("/admin/logout", data={"_csrf": token})
+
+        assert "non corretti" in login(c, token).get_data(as_text=True)  # la vecchia non vale più
+        r = login(c, token, password=temp)
+        assert r.headers["Location"].endswith("/area-clienti/password")
+        assert c.get("/area-clienti").headers["Location"].endswith("/area-clienti/password")  # obbligatorio
+        r = c.post("/area-clienti/password", data={"_csrf": token, "new": "nuovapass1", "new2": "nuovapass1"})
+        assert r.headers["Location"].endswith("/area-clienti")
+        logout(c, token)
+        assert login(c, token, password="nuovapass1").status_code == 302
+
+
+def test_customer_changes_own_password(env):
+    with webapp.app.test_client() as c:
+        token = csrf(c)
+        register(c, token)
+        r = c.post("/area-clienti/password", data={"_csrf": token, "current": "sbagliata1", "new": "altrapass1", "new2": "altrapass1"})
+        assert "non è corretta" in r.get_data(as_text=True)
+        c.post("/area-clienti/password", data={"_csrf": token, "current": "password123", "new": "altrapass1", "new2": "altrapass1"})
+        logout(c, token)
+        assert login(c, token, password="altrapass1").status_code == 302
+
+
+def test_admin_deletes_account(env, isolated_accounts):
+    with webapp.app.test_client() as c:
+        token = csrf(c)
+        register(c, token)
+        account = isolated_accounts.by_email("mario@example.com")
+        c.post("/admin/login", data={"_csrf": token, "password": "segreta123"})
+        c.post(f"/admin/account/{account['id']}/elimina", data={"_csrf": token})
+        assert isolated_accounts.all() == []
+        assert c.get("/area-clienti").status_code == 302  # la sessione del cliente non vale più
 
 
 def test_owner_alerted_on_customer_changes(env, isolated_notifications):
@@ -99,7 +188,7 @@ def test_owner_alerted_on_customer_changes(env, isolated_notifications):
         assert headers["Click"].endswith("/admin/avvisi")
 
         # annullamento dall'area clienti
-        c.post("/area-clienti/accedi", data={"_csrf": token, "accesso": "3331234567"})
+        register(c, token, code=code)
         r = c.post(f"/gestisci/{code}/cancella", data={"_csrf": token, "next": "/area-clienti"})
         assert r.headers["Location"].endswith("/area-clienti")
         ev = isolated_notifications.all()[0]

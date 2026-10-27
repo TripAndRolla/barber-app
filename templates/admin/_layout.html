@@ -13,7 +13,7 @@
   {% set ep = request.endpoint %}
   <a class="adminnav__item {% if ep == 'admin.week' %}is-on{% endif %}" href="{{ url_for('admin.week') }}">
     <span class="adminnav__n">1</span> Pianificazione</a>
-  <a class="adminnav__item {% if ep in ('admin.customers', 'admin.customer_detail') %}is-on{% endif %}" href="{{ url_for('admin.customers') }}">
+  <a class="adminnav__item {% if ep in ('admin.customers', 'admin.customer_detail', 'admin.accounts_page') %}is-on{% endif %}" href="{{ url_for('admin.customers') }}">
     <span class="adminnav__n">2</span> Clienti</a>
   <a class="adminnav__item {% if ep == 'admin.price_list' %}is-on{% endif %}" href="{{ url_for('admin.price_list') }}">
     <span class="adminnav__n">3</span> Listino</a>
