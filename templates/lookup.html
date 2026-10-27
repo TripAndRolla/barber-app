@@ -5,6 +5,7 @@
   <h1 class="section-title">Gestisci la tua prenotazione</h1>
   <p class="muted">Inserisci il codice ricevuto al momento della prenotazione per modificarla o annullarla.</p>
   {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+  <p class="hint">Vuoi vedere tutte le tue prenotazioni? <a href="{{ url_for('customer.login') }}">Accedi all'area clienti</a>.</p>
   <form method="post" action="{{ url_for('lookup') }}">
     <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
     <label class="field">

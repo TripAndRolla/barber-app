@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hmac
 import os
+import secrets
 from datetime import date, timedelta
 from functools import wraps
 
@@ -11,6 +12,7 @@ from flask import (Blueprint, abort, current_app, flash, redirect, render_templa
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from agenda import Agenda, BookingError, parse_date, parse_time
+import notifications
 import promemoria_whatsapp as reminders
 import ratelimit
 from customers import build_customers, revenue
@@ -696,3 +698,71 @@ def reminder_template():
     except SettingsError as exc:
         flash(str(exc), "error")
     return redirect(url_for("admin.reminders_page", data=request.form.get("data") or None) + "#testo")
+
+
+# --------------------------------------------------------------------------
+# 6. Avvisi (prenotazioni, modifiche e cancellazioni dei clienti)
+# --------------------------------------------------------------------------
+
+def get_notifications() -> notifications.NotificationStore:
+    return current_app.extensions["notifications"]
+
+
+@bp.app_context_processor
+def inject_alert_count():
+    if session.get("admin") is not True or "notifications" not in current_app.extensions:
+        return {"admin_unread": 0}
+    return {"admin_unread": get_notifications().unread_count()}
+
+
+@bp.get("/avvisi")
+@admin_required
+def alerts():
+    store, settings = get_notifications(), get_store().load()
+    items = store.all()
+    unread_ids = {e["id"] for e in items if not e.get("read")}
+    for e in items:
+        e["title"], e["text"] = notifications.message(e)
+    response = render_template(
+        "admin/alerts.html", items=items[:100], unread_ids=unread_ids, settings=settings,
+        events=notifications.EVENTS,
+        suggested_topic=settings.notify_ntfy_topic or f"barber-stella-{secrets.token_hex(4)}",
+    )
+    if unread_ids:
+        store.mark_all_read()  # visti: la campanella si azzera, nella pagina restano evidenziati
+    return response
+
+
+@bp.post("/avvisi/impostazioni")
+@admin_required
+def alert_settings():
+    store = get_store()
+    settings = store.load()
+    form = request.form
+    settings.notify_events = [k for k in notifications.EVENTS if form.get(f"evento-{k}")]
+    settings.notify_ntfy_topic = form.get("ntfy_topic", "").strip()
+    settings.notify_callmebot_phone = form.get("callmebot_phone", "").replace(" ", "").strip()
+    settings.notify_callmebot_apikey = form.get("callmebot_apikey", "").strip()
+    try:
+        store.save(settings)
+        flash("Impostazioni degli avvisi salvate.", "success")
+    except SettingsError as exc:
+        flash(str(exc), "error")
+    return redirect(url_for("admin.alerts") + "#telefono")
+
+
+@bp.post("/avvisi/prova")
+@admin_required
+def alert_test():
+    settings = get_store().load()
+    if not (settings.notify_ntfy_topic or (settings.notify_callmebot_phone and settings.notify_callmebot_apikey)):
+        flash("Configura prima almeno un canale (ntfy o WhatsApp) e salva.", "error")
+        return redirect(url_for("admin.alerts") + "#telefono")
+    event = {"type": "nuova", "name": "Prova avvisi", "phone": "", "new": "funziona!",
+             "service": settings.shop_name, "code": "PROVA"}
+    errors = notifications.push(settings, event, url_for("admin.alerts", _external=True))
+    if errors:
+        flash("Invio di prova non riuscito: " + "; ".join(errors), "error")
+    else:
+        flash("Notifica di prova inviata: controlla il telefono.", "success")
+    return redirect(url_for("admin.alerts") + "#telefono")

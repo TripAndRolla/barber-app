@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Le mie prenotazioni{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow eyebrow--dark">Area clienti</p>
+    <h1 class="section-title">Ciao {{ (profile.name.split(' ')[0] if profile else customer_name) or '' }}!</h1>
+    <p class="muted small">{% if profile %}{{ profile.phone }}{% endif %}{% if visits %} · {{ visits }} visit{{ 'a' if visits == 1 else 'e' }} da noi{% endif %}</p>
+  </div>
+  <a class="btn btn--primary" href="{{ url_for('index') }}#prenota">+ Nuova prenotazione</a>
+</div>
+
+<h2 class="card__title">Prossimi appuntamenti</h2>
+{% if upcoming %}
+  <ul class="my-bookings">
+    {% for b in upcoming %}
+      <li class="my-booking">
+        <div class="my-booking__date">
+          <span>{{ format_day(b.day).split(' ')[0][:3] }}</span>
+          <strong>{{ b.day.day }}</strong>
+          <span>{{ format_day(b.day).split(' ')[2][:3] }}</span>
+        </div>
+        <div class="my-booking__body">
+          <strong>{{ b.start.strftime('%H:%M') }} · {{ b.service }}</strong>
+          <span class="muted small">{{ b.day_label|capitalize }} · fino alle {{ b.end.strftime('%H:%M') }}</span>
+          <span class="my-booking__code">Codice <strong>{{ b.code }}</strong>
+            {% with code=b.code %}{% include "_copy_button.html" %}{% endwith %}</span>
+          <span class="my-booking__actions">
+            <a class="btn btn--small btn--ghost" href="{{ url_for('manage', code=b.code) }}#modifica">Modifica</a>
+            <form method="post" action="{{ url_for('cancel', code=b.code) }}"
+                  data-confirm="Vuoi davvero annullare l'appuntamento di {{ b.day_label }} alle {{ b.start.strftime('%H:%M') }}?">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <input type="hidden" name="next" value="{{ url_for('customer.area') }}">
+              <button class="btn btn--small btn--danger-ghost" type="submit">Annulla</button>
+            </form>
+          </span>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="card center">
+    <p class="muted">Non hai appuntamenti in programma.</p>
+    <a class="btn btn--primary" href="{{ url_for('index') }}#prenota">Prenota un appuntamento</a>
+  </div>
+{% endif %}
+
+{% if history %}
+  <h2 class="card__title">Storico</h2>
+  <ul class="hist">
+    {% for b in history %}
+      <li class="hist__row {% if not b.active %}row--muted{% endif %}">
+        <span class="hist__date"><strong>{{ b.day.strftime('%d/%m/%y') }}</strong><span>{{ b.start.strftime('%H:%M') }}</span></span>
+        <span class="hist__body"><span>{{ b.service }}</span></span>
+        <span class="hist__side"><span class="badge badge--{{ b.status }}">{{ 'svolto' if b.active else b.status }}</span></span>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+{% endblock %}

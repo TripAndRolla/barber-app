@@ -1,0 +1,90 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Avvisi{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="section-title">Avvisi</h1>
+    <p class="muted small">Prenotazioni, modifiche e cancellazioni fatte dai clienti, dalla più recente.</p>
+  </div>
+  <a class="btn btn--small btn--ghost" href="#telefono">Ricevili sul telefono</a>
+</div>
+
+{% if items %}
+  <ul class="alerts-list">
+    {% for e in items %}
+      <li class="alert-item alert-item--{{ e.type }} {% if e.id in unread_ids %}is-new{% endif %}">
+        <span class="alert-item__icon" aria-hidden="true">{{ events[e.type][0] if e.type in events else '🔔' }}</span>
+        <div class="alert-item__body">
+          <div class="alert-item__head">
+            <strong>{{ events[e.type][1] if e.type in events else 'Avviso' }}</strong>
+            {% if e.id in unread_ids %}<span class="badge badge--modificata">Nuovo</span>{% endif %}
+            <span class="muted small alert-item__at">{{ e.at[8:10] }}/{{ e.at[5:7] }} {{ e.at[11:16] }}</span>
+          </div>
+          <span><strong>{{ e.name }}</strong>{% if e.phone %} · <a href="tel:{{ e.phone|replace(' ', '') }}">{{ e.phone }}</a>{% endif %}</span>
+          {% if e.type == 'modifica' and e.old %}
+            <span class="alert-item__change"><s class="muted">{{ e.old }}{% if e.old_service %} · {{ e.old_service }}{% endif %}</s>
+              <span aria-hidden="true">→</span> <strong>{{ e.new }}</strong> · {{ e.service }}</span>
+          {% else %}
+            <span>{{ e.new|capitalize }} · {{ e.service }}</span>
+          {% endif %}
+          <span class="muted small">Codice {{ e.code }}{% if e.via %} · da {{ e.via }}{% endif %}
+            {% if e.day %} · <a href="{{ url_for('admin.week', data=e.day) }}">vedi in agenda</a>{% endif %}</span>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="card center"><p class="muted">Nessun avviso. Qui compariranno le prenotazioni, modifiche e cancellazioni fatte dai clienti.</p></div>
+{% endif %}
+
+<section class="card" id="telefono">
+  <h2 class="card__title">Ricevi gli avvisi sul telefono</h2>
+  <form method="post" action="{{ url_for('admin.alert_settings') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <p class="field-label">Avvisami quando un cliente…</p>
+    <div class="alert-events">
+      {% for key, (icon, label) in events.items() %}
+        <label class="check"><input type="checkbox" name="evento-{{ key }}" value="1" {% if key in settings.notify_events %}checked{% endif %}>
+          {{ icon }} {{ {'nuova': 'prenota', 'modifica': 'modifica una prenotazione', 'cancellazione': 'annulla una prenotazione'}[key] }}</label>
+      {% endfor %}
+    </div>
+    <p class="hint">Nel Pannello Admin gli avvisi compaiono sempre; le spunte decidono cosa arriva anche sul telefono.</p>
+
+    <div class="channels">
+      <div class="channel">
+        <h3>📲 Notifiche push con ntfy <span class="badge {% if settings.notify_ntfy_topic %}badge--confermata{% endif %}">{{ 'attivo' if settings.notify_ntfy_topic else 'non attivo' }}</span></h3>
+        <ol class="small">
+          <li>Installa l'app gratuita <strong>ntfy</strong> (<a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank" rel="noopener">Android</a> · <a href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank" rel="noopener">iPhone</a>).</li>
+          <li>Nell'app premi <strong>+</strong> e iscriviti al canale qui sotto (copialo uguale).</li>
+          <li>Premi <strong>Salva</strong> e poi <strong>Invia notifica di prova</strong>.</li>
+        </ol>
+        <label class="field"><span>Nome del canale <small class="muted">(tienilo segreto: chi lo conosce riceve gli avvisi)</small></span>
+          <span class="copy-field">
+            <input class="input" name="ntfy_topic" value="{{ settings.notify_ntfy_topic or suggested_topic }}" maxlength="64" autocomplete="off">
+            {% with code=settings.notify_ntfy_topic or suggested_topic %}{% include "_copy_button.html" %}{% endwith %}
+          </span>
+        </label>
+        <p class="hint">Per disattivarlo svuota il campo e salva.</p>
+      </div>
+      <div class="channel">
+        <h3>💬 WhatsApp con CallMeBot <span class="badge {% if settings.notify_callmebot_apikey %}badge--confermata{% endif %}">{{ 'attivo' if settings.notify_callmebot_apikey else 'non attivo' }}</span></h3>
+        <ol class="small">
+          <li>Segui le istruzioni su <a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" rel="noopener">callmebot.com</a>: aggiungi il loro numero ai contatti e invia il messaggio di attivazione.</li>
+          <li>Riceverai su WhatsApp la tua <strong>apikey</strong>: inseriscila qui con il tuo numero.</li>
+        </ol>
+        <label class="field"><span>Numero WhatsApp del titolare</span>
+          <input class="input" name="callmebot_phone" value="{{ settings.notify_callmebot_phone }}" placeholder="+393281890726" inputmode="tel"></label>
+        <label class="field"><span>Apikey CallMeBot</span>
+          <input class="input" name="callmebot_apikey" value="{{ settings.notify_callmebot_apikey }}" autocomplete="off"></label>
+      </div>
+    </div>
+    <div class="row-actions">
+      <button class="btn btn--primary" type="submit">Salva</button>
+    </div>
+  </form>
+  <form method="post" action="{{ url_for('admin.alert_test') }}" class="alert-test">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <button class="btn btn--ghost" type="submit">Invia notifica di prova</button>
+  </form>
+</section>
+{% endblock %}

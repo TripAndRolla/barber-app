@@ -593,3 +593,62 @@ input[type="checkbox"] { accent-color: var(--accent); }
   .closures li { flex-wrap: wrap; }
   .sticky-save .btn { width: 100%; }
 }
+
+/* ==========================================================================
+   Doppio accesso: area clienti e avvisi al titolare
+   ========================================================================== */
+.nav__account { display: inline-flex; align-items: center; gap: 8px; }
+.nav__avatar {
+  display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-ink); font-size: .68rem; font-weight: 700;
+}
+.nav__bell { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 40px; }
+.nav__badge {
+  position: absolute; top: 2px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  background: var(--danger); color: #fff; font-size: .68rem; font-weight: 700; line-height: 18px; text-align: center;
+}
+.alert--info { background: var(--info-bg); color: var(--info-ink); }
+.alert-link { display: block; text-decoration: none; }
+.alert-link:hover { filter: brightness(.97); }
+
+.login-choice { max-width: 460px; margin: 0 auto; }
+.login-card__kicker {
+  display: inline-block; margin-bottom: 8px; padding: 3px 12px; border-radius: 999px;
+  background: var(--accent); color: var(--accent-ink); font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+}
+.eyebrow--dark { color: var(--muted); opacity: 1; }
+
+.my-bookings { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 10px; }
+.my-booking { display: grid; grid-template-columns: 64px 1fr; gap: 14px; background: var(--surface); border-radius: 22px; box-shadow: var(--shadow); padding: 14px; }
+.my-booking__date {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 16px;
+  background: var(--accent); color: var(--accent-ink); padding: 8px 0; line-height: 1.1; text-transform: uppercase;
+}
+.my-booking__date span { font-size: .7rem; letter-spacing: .06em; opacity: .8; }
+.my-booking__date strong { font-size: 1.6rem; }
+.my-booking__body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.my-booking__code { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .9rem; }
+.my-booking__code .copy-btn { margin-top: 0; min-height: 32px; padding: 4px 12px; }
+.my-booking__actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.my-booking__actions form { margin: 0; }
+
+.alerts-list { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 10px; }
+.alert-item { display: grid; grid-template-columns: 44px 1fr; gap: 12px; background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); padding: 14px 16px; border-left: 4px solid transparent; }
+.alert-item.is-new { border-left-color: var(--info-ink); }
+.alert-item__icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--surface-2); font-size: 1.3rem; }
+.alert-item--cancellazione .alert-item__icon { background: var(--err-bg); }
+.alert-item--modifica .alert-item__icon { background: var(--warn-bg); }
+.alert-item--nuova .alert-item__icon { background: var(--ok-bg); }
+.alert-item__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.alert-item__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.alert-item__at { margin-left: auto; }
+.alert-item__change s { text-decoration-thickness: 1px; }
+.alert-events { display: flex; flex-wrap: wrap; gap: 4px 22px; }
+.channels { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 10px 0 16px; }
+.channel { border: 1px solid var(--line); border-radius: 18px; padding: 16px; background: var(--surface-2); }
+.channel h3 { margin: 0 0 8px; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.channel ol { padding-left: 18px; margin: 0 0 12px; }
+.copy-field { display: flex; gap: 8px; align-items: center; }
+.copy-field .copy-btn { margin-top: 0; flex: none; }
+.alert-test { margin: 10px 0 0; }
+@media (max-width: 720px) { .alert-item__at { margin-left: 0; width: 100%; } }

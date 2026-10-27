@@ -15,6 +15,8 @@ from flask import (Flask, abort, current_app, flash, jsonify, redirect, render_t
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from agenda import Agenda, BookingError, format_day_it, normalize_code, parse_date, parse_time
+import customer_area
+import notifications
 from settings import SettingsStore, format_price
 from storage import open_data_file
 
@@ -62,6 +64,8 @@ _settings_store = SettingsStore(open_data_file(
 app.extensions["settings"] = _settings_store
 app.extensions["agenda"] = Agenda(open_data_file(
     os.environ.get("BARBER_AGENDA_PATH", _default_agenda_path()), "agenda.md"), _settings_store)
+app.extensions["notifications"] = notifications.NotificationStore(open_data_file(
+    os.environ.get("BARBER_NOTIFICATIONS_PATH", BASE_DIR / "notifiche.json"), "notifiche.json"))
 
 
 def get_agenda() -> Agenda:
@@ -121,6 +125,18 @@ app.jinja_env.filters["euro"] = lambda v: format_price(v) or "—"
 app.jinja_env.filters["monogram"] = _monogram
 
 
+def alert_owner(kind: str, booking, old=None) -> None:
+    """Avvisa il proprietario di una prenotazione/modifica/cancellazione fatta dal cliente."""
+    if kind == "nuova":
+        via = "sito"
+    else:
+        via = "area clienti" if customer_area.owns(booking) else "link con codice"
+    event = notifications.build_event(kind, booking, old, via)
+    notifications.notify(current_app.extensions["notifications"], get_settings_store().load(), event,
+                         click_url=url_for("admin.alerts", _external=True),
+                         background=not current_app.testing)
+
+
 def _date_bounds() -> tuple[str, str]:
     today = get_agenda().now().date()
     return today.isoformat(), (today + timedelta(days=get_settings_store().load().horizon_days)).isoformat()
@@ -146,7 +162,10 @@ def ping():
 @app.get("/")
 def index():
     min_d, max_d = _date_bounds()
-    return render_template("index.html", form={}, min_date=min_d, max_date=max_d)
+    form = {}
+    if customer_area.current_customer():  # cliente collegato: nome e telefono già compilati
+        form = {"name": session.get("customer_name", ""), "phone": customer_area.current_customer()}
+    return render_template("index.html", form=form, min_date=min_d, max_date=max_d)
 
 
 @app.get("/api/slots")
@@ -185,6 +204,7 @@ def book():
     except BookingError as exc:
         min_d, max_d = _date_bounds()
         return render_template("index.html", form=form, error=str(exc), min_date=min_d, max_date=max_d), 422
+    alert_owner("nuova", booking)
     flash("created", "event")
     return redirect(url_for("manage", code=booking.code))
 
@@ -214,10 +234,12 @@ def manage(code: str):
 
 @app.post("/gestisci/<code>/modifica")
 def modify(code: str):
+    old = get_agenda().get(code)
     try:
-        get_agenda().update(code, day=parse_date(request.form.get("date")),
-                            start=parse_time(request.form.get("time")),
-                            service=request.form.get("service", ""))
+        booking = get_agenda().update(code, day=parse_date(request.form.get("date")),
+                                      start=parse_time(request.form.get("time")),
+                                      service=request.form.get("service", ""))
+        alert_owner("modifica", booking, old)
         flash("modified", "event")
     except BookingError as exc:
         flash(str(exc), "error")
@@ -226,11 +248,15 @@ def modify(code: str):
 
 @app.post("/gestisci/<code>/cancella")
 def cancel(code: str):
+    from_area = request.form.get("next", "").startswith("/area-clienti")  # annullata dall'area clienti
     try:
-        get_agenda().cancel(code)
-        flash("cancelled", "event")
+        booking = get_agenda().cancel(code)
+        alert_owner("cancellazione", booking)
+        flash("Appuntamento annullato." if from_area else "cancelled", "success" if from_area else "event")
     except BookingError as exc:
         flash(str(exc), "error")
+    if from_area:
+        return redirect(request.form["next"])
     return redirect(url_for("manage", code=normalize_code(code)))
 
 
@@ -244,6 +270,7 @@ def http_error(err):
 from admin import bp as admin_bp  # noqa: E402
 
 app.register_blueprint(admin_bp)
+customer_area.init_app(app)
 
 
 if __name__ == "__main__":

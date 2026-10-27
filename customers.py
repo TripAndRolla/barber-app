@@ -14,13 +14,19 @@ from agenda import Booking
 from settings import Settings
 
 
+def phone_key(phone: str) -> str:
+    """Numero senza prefisso internazionale: "+39 333 1234567", "0039..." e "3331234567" coincidono."""
+    digits = re.sub(r"\D", "", phone or "")
+    if digits.startswith("0039"):
+        return digits[4:]
+    if (phone or "").strip().startswith("+39") or (digits.startswith("39") and len(digits) == 12):
+        return digits[2:]
+    return digits
+
+
 def customer_key(b: Booking) -> str:
-    digits = re.sub(r"\D", "", b.phone)
+    digits = phone_key(b.phone)
     if digits:
-        if digits.startswith("0039"):
-            digits = digits[4:]
-        elif b.phone.strip().startswith("+39") or (digits.startswith("39") and len(digits) == 12):
-            digits = digits[2:]
         return digits
     if b.email.strip():
         return b.email.strip().lower()

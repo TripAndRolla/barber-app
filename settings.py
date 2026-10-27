@@ -165,6 +165,11 @@ class Settings:
     national_holidays_open: list[str] = field(default_factory=list)  # festività in cui si lavora
     local_holidays: list[LocalHoliday] = field(default_factory=list)
     reminder_template: str = DEFAULT_REMINDER_TEMPLATE
+    # avvisi al proprietario quando un cliente prenota/modifica/annulla
+    notify_events: list[str] = field(default_factory=lambda: ["modifica", "cancellazione"])
+    notify_ntfy_topic: str = ""
+    notify_callmebot_phone: str = ""
+    notify_callmebot_apikey: str = ""
     admin_password_hash: str = ""
 
     # -- helper ---------------------------------------------------------
@@ -258,6 +263,10 @@ class Settings:
             national_holidays_open=list(data.get("national_holidays_open", [])),
             local_holidays=[LocalHoliday(**h) for h in data.get("local_holidays", [])],
             reminder_template=data.get("reminder_template") or DEFAULT_REMINDER_TEMPLATE,
+            notify_events=list(data.get("notify_events", default.notify_events)),
+            notify_ntfy_topic=data.get("notify_ntfy_topic", ""),
+            notify_callmebot_phone=data.get("notify_callmebot_phone", ""),
+            notify_callmebot_apikey=data.get("notify_callmebot_apikey", ""),
             admin_password_hash=data.get("admin_password_hash", ""),
         )
 
@@ -297,6 +306,12 @@ def validate(settings: Settings) -> None:
         raise SettingsError("Il nome del negozio è obbligatorio.")
     if settings.vat_number and not re.fullmatch(r"\d{11}", settings.vat_number):
         raise SettingsError("La partita IVA deve avere 11 cifre.")
+    if not set(settings.notify_events) <= {"nuova", "modifica", "cancellazione"}:
+        raise SettingsError("Tipo di avviso non valido.")
+    if settings.notify_ntfy_topic and not re.fullmatch(r"[A-Za-z0-9_-]{6,64}", settings.notify_ntfy_topic):
+        raise SettingsError("Nome del canale ntfy non valido (6-64 caratteri: lettere, numeri, - e _).")
+    if settings.notify_callmebot_phone and not re.fullmatch(r"\+?\d{8,15}", settings.notify_callmebot_phone):
+        raise SettingsError("Numero WhatsApp per gli avvisi non valido (es. +393281890726).")
     names = set()
     for s in settings.services:
         if not s.name.strip() or len(s.name) > 40 or "|" in s.name:

@@ -20,8 +20,24 @@
       </a>
       <nav class="nav">
         <a class="nav__public" href="{{ url_for('index') }}#prenota">Prenota</a>
-        <a class="nav__public" href="{{ url_for('lookup') }}">La mia prenotazione</a>
+        {% if customer_logged %}
+          <a class="nav__public nav__account" href="{{ url_for('customer.area') }}">
+            <span class="nav__avatar" aria-hidden="true">{{ (customer_name or 'Cliente')|monogram }}</span>Le mie prenotazioni</a>
+          {% if not is_admin %}
+          <form method="post" action="{{ url_for('customer.logout') }}" class="inline nav__public">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <button class="linklike" type="submit">Esci</button>
+          </form>
+          {% endif %}
+        {% else %}
+          <a class="nav__public" href="{{ url_for('customer.login') }}">Area clienti</a>
+        {% endif %}
         {% if is_admin %}
+          <a class="nav__bell {% if admin_unread %}has-unread{% endif %}" href="{{ url_for('admin.alerts') }}"
+             aria-label="Avvisi{% if admin_unread %}: {{ admin_unread }} da leggere{% endif %}">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            {% if admin_unread %}<span class="nav__badge">{{ admin_unread }}</span>{% endif %}
+          </a>
           <a class="nav__admin" href="{{ url_for('admin.week') }}">Pannello Admin</a>
           <form method="post" action="{{ url_for('admin.logout') }}" class="inline">
             <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
@@ -51,6 +67,7 @@
         {% if shop.vat_number %}<br>P.IVA {{ shop.vat_number }}{% endif %}
       </div>
       <div class="footer__links">
+        {% if not customer_logged %}<a href="{{ url_for('customer.login') }}">Area clienti</a>{% endif %}
         {% if not is_admin %}<a href="{{ url_for('admin.login') }}" rel="nofollow">Pannello Admin</a>{% endif %}
       </div>
     </div>

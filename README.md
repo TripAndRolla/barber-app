@@ -21,6 +21,17 @@ Apri <http://127.0.0.1:5000>. Per renderla raggiungibile da altri dispositivi de
 
 Gli orari proposti non si sovrappongono ad altri appuntamenti, non sono nel passato, non cadono in giorni di chiusura o festivi e non finiscono mai oltre la chiusura di una fascia (nessun servizio a cavallo della pausa pranzo).
 
+## Area clienti (`/area-clienti`)
+
+Il cliente accede con **telefono + codice di una sua prenotazione** (nessuna password da ricordare) e vede tutte le prenotazioni fatte con quel numero: prossimi appuntamenti con "Modifica", "Annulla" e codice copiabile, storico, e "Nuova prenotazione" con nome e telefono già compilati. Può restare collegato 30 giorni. Dopo 5 tentativi errati l'accesso è bloccato per 5 minuti.
+
+## Avvisi al titolare
+
+Quando un cliente prenota, modifica o annulla (dall'area clienti o dal link con il codice), l'avviso compare nel **Pannello Admin → Avvisi** (campanella con il numero di non letti; storico salvato in `notifiche.json`, online nel repository dati). Le azioni fatte dal titolare non generano avvisi. Dalla stessa pagina si sceglie quali eventi mandare anche sul telefono, tramite:
+
+- **ntfy** (gratuito, nessuna registrazione): installa l'app, iscriviti al canale indicato nella pagina, salva e premi "Invia notifica di prova";
+- **WhatsApp con CallMeBot** (gratuito): numero del titolare + apikey ottenuta seguendo le istruzioni su callmebot.com.
+
 ## Pannello Admin (`/admin`)
 
 Si apre dal link **Pannello Admin** nel footer e si accede con la **sola password** del titolare: senza password nessuno può entrare (tutte le pagine `/admin` rimandano al login). La password si sceglie al primo accesso, consentito solo dal computer del negozio (localhost); in alternativa si imposta con `BARBER_ADMIN_PASSWORD`. Dopo 5 tentativi errati l'accesso è bloccato per 5 minuti.

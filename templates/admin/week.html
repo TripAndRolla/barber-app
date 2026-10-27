@@ -18,6 +18,11 @@
   </div>
 </div>
 
+{% if admin_unread %}
+  <a class="alert alert--info alert-link" href="{{ url_for('admin.alerts') }}">
+    🔔 <strong>{{ admin_unread }} nuov{{ 'o avviso' if admin_unread == 1 else 'i avvisi' }}</strong> dai clienti (prenotazioni, modifiche o cancellazioni) →</a>
+{% endif %}
+
 {% if out_of_hours %}
   <div class="alert alert--warn">
     <strong>Attenzione:</strong> {{ out_of_hours|length }} appuntament{{ 'o futuro non rientra' if out_of_hours|length == 1 else 'i futuri non rientrano' }}

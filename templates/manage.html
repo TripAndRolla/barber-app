@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Prenotazione {{ booking.code }}{% endblock %}
 {% block content %}
+{% if customer_logged %}<p><a href="{{ url_for('customer.area') }}">‹ Le mie prenotazioni</a></p>{% endif %}
 {% for category, message in get_flashed_messages(with_categories=true) if category == 'event' %}
   {% if message == 'created' %}
     <div class="alert alert--success" role="status"><strong>Prenotazione confermata!</strong> Conserva il codice qui sotto: ti servirà per modificare o annullare l'appuntamento.</div>
@@ -52,7 +53,7 @@
 {% endif %}
 
 {% if editable %}
-<section class="card card--form">
+<section class="card card--form" id="modifica">
   <h2 class="section-title">Modifica appuntamento</h2>
   <form method="post" action="{{ url_for('modify', code=booking.code) }}" data-booking-form>
     <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
